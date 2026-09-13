@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url'
 import { initConfig, updateComment } from './utils/github.js'
 import { packageMetadata } from './utils/package.js'
 import { startStudio, stop } from './utils/process.js'
-import { createAgent, createSnapshot, snapshotDetails, studioUrl } from './utils/studio.js'
+import { createAgent, createSnapshot, machineSecret, snapshotDetails, studioUrl } from './utils/studio.js'
 
 export async function run(): Promise<void> {
   if (context.payload.pull_request?.head?.repo?.fork) {
@@ -25,7 +25,7 @@ export async function run(): Promise<void> {
   const repositoryId = String(context.payload.repository?.id ?? context.repo.repo)
   const agent = await createAgent(apiKey, `${context.repo.owner}/${context.repo.repo}`, repositoryId)
   core.setSecret(agent.token)
-  const child = startStudio(studioUrl, agent.token, config)
+  const child = startStudio(studioUrl, agent.token, config, machineSecret(repositoryId))
   try {
     const snapshot = snapshotDetails(await createSnapshot(agent.id, apiKey, metadata), agent.id)
     core.setOutput('snapshot-id', snapshot.id)

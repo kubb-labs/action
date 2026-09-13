@@ -1,5 +1,5 @@
 import { context } from '@actions/github'
-import { createHmac } from 'node:crypto'
+import { createHash } from 'node:crypto'
 
 type Agent = { id: string; slug: string; token: string }
 type ErrorResponse = { message?: string; data?: { upgradeUrl?: string } }
@@ -37,8 +37,12 @@ async function request<T>(path: string, token: string, init: RequestInit = {}): 
   return body as T
 }
 
-export function machineToken(apiKey: string, repositoryId: string): string {
-  return createHmac('sha256', apiKey).update(`gh:${repositoryId}`).digest('hex')
+export function machineSecret(repositoryId: string): string {
+  return `gh:${repositoryId}`
+}
+
+export function machineToken(repositoryId: string): string {
+  return createHash('sha256').update(machineSecret(repositoryId)).digest('hex')
 }
 
 export function absoluteUrl(path: string): string {
@@ -46,7 +50,7 @@ export function absoluteUrl(path: string): string {
 }
 
 export async function createAgent(token: string, name: string, repositoryId: string): Promise<Agent> {
-  return request('/api/agents', token, { method: 'POST', body: JSON.stringify({ name, machineToken: machineToken(token, repositoryId) }) })
+  return request('/api/agents', token, { method: 'POST', body: JSON.stringify({ name, machineToken: machineToken(repositoryId) }) })
 }
 
 export async function createSnapshot(agentId: string, token: string, metadata: { name: string; version: string }): Promise<Snapshot> {
