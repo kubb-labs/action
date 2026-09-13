@@ -5,6 +5,7 @@ import { runCommand } from './process.js'
 import { type SnapshotDetails, studioUrl } from './studio.js'
 
 const marker = '<!-- kubb-studio-snapshot -->'
+type Pull = { head: { ref: string; repo?: { full_name?: string } | null } }
 
 export async function updateComment(snapshot: SnapshotDetails, agentSlug: string, token: string): Promise<void> {
   if (!token || !context.issue.number) return
@@ -33,13 +34,7 @@ export async function initConfig(token: string): Promise<boolean> {
   if (token) {
     const github = getOctokit(token)
     const pulls = await github.paginate(github.rest.pulls.list, { owner, repo, base: defaultBranch, state: 'open' })
-    if (
-      pulls.some(
-        (pull: { head: { ref: string; repo?: { full_name?: string } | null } }) =>
-          pull.head.repo?.full_name === `${owner}/${repo}` && pull.head.ref.startsWith('kubb/init-'),
-      )
-    )
-      return true
+    if (pulls.some((pull: Pull) => pull.head.repo?.full_name === `${owner}/${repo}` && pull.head.ref.startsWith('kubb/init-'))) return true
   }
   const branch = `kubb/init-${context.runId}`
   await runCommand('git', ['fetch', 'origin', defaultBranch])
