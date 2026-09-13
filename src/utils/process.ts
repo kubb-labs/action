@@ -1,4 +1,5 @@
 import { spawn, type ChildProcess } from 'node:child_process'
+import { once } from 'node:events'
 
 export function runCommand(command: string, args: string[], env = process.env): Promise<void> {
   return new Promise((resolveCommand, reject) => {
@@ -20,17 +21,7 @@ export function startStudio(url: string, agentToken: string, config = 'kubb.conf
 export async function stop(child: ChildProcess): Promise<void> {
   if (child.exitCode !== null || !child.pid) return
 
-  const kill = (signal: NodeJS.Signals) => {
-    try {
-      return process.platform === 'win32' ? child.kill(signal) : process.kill(-child.pid!, signal)
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== 'ESRCH') throw error
-      return false
-    }
-  }
-  const exited = new Promise<void>((resolve) => child.once('exit', () => resolve()))
-
-  kill('SIGTERM')
-  const timeout = setTimeout(() => kill('SIGKILL'), 5_000)
-  await exited.finally(() => clearTimeout(timeout))
+  const exited = once(child, 'exit')
+  process.kill(process.platform === 'win32' ? child.pid : -child.pid, 'SIGTERM')
+  await exited
 }
