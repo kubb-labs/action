@@ -1,0 +1,1 @@
+{"version":3,"file":"index.js","names":[],"sources":["../src/index.ts"],"sourcesContent":["export function run(): void {\n  console.log('Kubb snapshot action scaffold')\n}\n\nrun()\n"],"mappings":";;AAAA,SAAgB,MAAY;CAC1B,QAAQ,IAAI,+BAA+B;AAC7C;AAEA,IAAI"}

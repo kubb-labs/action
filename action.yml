@@ -1,0 +1,26 @@
+name: Kubb snapshot
+description: Generate and publish a Kubb snapshot from GitHub Actions
+author: Kubb Labs
+branding:
+  icon: package
+  color: blue
+inputs:
+  token:
+    description: Kubb Studio CI token
+    required: true
+outputs:
+  snapshot-id:
+    description: ID of the generated snapshot
+  package-name:
+    description: Generated package name
+  package-version:
+    description: Generated package version
+  tarball-url:
+    description: URL of the generated package tarball
+  integrity:
+    description: SHA-512 integrity of the generated tarball
+  agent-url:
+    description: Kubb Studio agent URL
+runs:
+  using: node24
+  main: dist/index.js
