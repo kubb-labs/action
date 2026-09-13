@@ -12,6 +12,7 @@ export async function run(): Promise<void> {
     core.info('Skipping Kubb snapshot: GitHub does not expose repository secrets to fork pull requests.')
     return
   }
+  process.chdir(resolve(process.cwd(), core.getInput('working-directory') || '.'))
   const apiKey = core.getInput('token', { required: true })
   const githubToken = core.getInput('github-token') || process.env.GITHUB_TOKEN || ''
   if (await initConfig(githubToken)) {

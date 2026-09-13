@@ -12,6 +12,10 @@ inputs:
     description: GitHub token used to open the initialization pull request and update the snapshot comment
     default: ${{ github.token }}
     required: false
+  working-directory:
+    description: Directory containing the Kubb configuration and package
+    default: .
+    required: false
 outputs:
   snapshot-id:
     description: ID of the generated snapshot
