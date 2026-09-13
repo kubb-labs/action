@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest'
-import { absoluteUrl, machineToken } from '../src/index'
+import { absoluteUrl, machineToken } from '../src/utils/studio'
 
 test('derives a stable machine token and resolves Studio URLs', () => {
   expect(machineToken('secret', '123')).toBe(machineToken('secret', '123'))

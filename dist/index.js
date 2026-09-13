@@ -1,14 +1,43 @@
 import * as core from "@actions/core";
 import { context, getOctokit } from "@actions/github";
-import { createHmac } from "node:crypto";
-import { existsSync, readFileSync } from "node:fs";
-import { spawn } from "node:child_process";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { existsSync, readFileSync } from "node:fs";
+import { spawn } from "node:child_process";
+import { createHmac } from "node:crypto";
 //#endregion
-//#region src/index.ts
+//#region src/utils/process.ts
+function runCommand(command, args, env = process.env) {
+	return new Promise((resolveCommand, reject) => {
+		const child = spawn(command, args, {
+			env,
+			stdio: "inherit"
+		});
+		child.once("error", reject);
+		child.once("exit", (code) => code === 0 ? resolveCommand() : reject(/* @__PURE__ */ new Error(`${command} exited with ${code}`)));
+	});
+}
+function startStudio(url, agentToken) {
+	const { INPUT_TOKEN: _inputToken, KUBB_TOKEN: _kubbToken, ...safeEnv } = process.env;
+	return spawn("npx", [
+		"kubb",
+		"studio",
+		"--url",
+		url
+	], {
+		env: {
+			...safeEnv,
+			KUBB_AGENT_TOKEN: agentToken
+		},
+		stdio: "inherit"
+	});
+}
+function stop(child) {
+	if (!child.killed) child.kill("SIGTERM");
+}
+//#endregion
+//#region src/utils/studio.ts
 const studioUrl = (process.env.KUBB_STUDIO_URL ?? "https://kubb.studio").replace(/\/$/, "");
-const marker = "<!-- kubb-studio-snapshot -->";
 async function request(path, token, init = {}) {
 	const response = await fetch(`${studioUrl}${path}`, {
 		...init,
@@ -31,55 +60,19 @@ async function request(path, token, init = {}) {
 	}
 	return body;
 }
-function packageMetadata() {
-	let directory = process.cwd();
-	while (true) {
-		const file = join(directory, "package.json");
-		if (existsSync(file)) {
-			const packageJson = JSON.parse(readFileSync(file, "utf8"));
-			if (packageJson.name && packageJson.version) return {
-				name: packageJson.name,
-				version: packageJson.version
-			};
-		}
-		const parent = dirname(directory);
-		if (parent === directory) break;
-		directory = parent;
-	}
-	throw new Error("No package.json with name and version found for the current working directory");
-}
 function machineToken(apiKey, repositoryId) {
 	return createHmac("sha256", apiKey).update(`gh:${repositoryId}`).digest("hex");
 }
 function absoluteUrl(path) {
 	return new URL(path, `${studioUrl}/`).toString();
 }
-function runCommand(command, args, env = process.env) {
-	return new Promise((resolveCommand, reject) => {
-		const child = spawn(command, args, {
-			env,
-			stdio: "inherit"
-		});
-		child.once("error", reject);
-		child.once("exit", (code) => code === 0 ? resolveCommand() : reject(/* @__PURE__ */ new Error(`${command} exited with ${code}`)));
-	});
-}
-function stop(child) {
-	if (!child.killed) child.kill("SIGTERM");
-}
-function startStudio(agentToken) {
-	const { INPUT_TOKEN: _inputToken, KUBB_TOKEN: _kubbToken, ...safeEnv } = process.env;
-	return spawn("npx", [
-		"kubb",
-		"studio",
-		"--url",
-		studioUrl
-	], {
-		env: {
-			...safeEnv,
-			KUBB_AGENT_TOKEN: agentToken
-		},
-		stdio: "inherit"
+async function createAgent(token, name, repositoryId) {
+	return request("/api/agents", token, {
+		method: "POST",
+		body: JSON.stringify({
+			name,
+			machineToken: machineToken(token, repositoryId)
+		})
 	});
 }
 async function createSnapshot(agentId, token, metadata) {
@@ -111,6 +104,9 @@ function snapshotDetails(snapshot, agentId) {
 		url: absoluteUrl(String(snapshot.url))
 	};
 }
+//#endregion
+//#region src/utils/github.ts
+const marker = "<!-- kubb-studio-snapshot -->";
 async function updateComment(snapshot, agentSlug, token) {
 	if (!token || !context.issue.number) return;
 	const github = getOctokit(token);
@@ -191,6 +187,27 @@ async function initConfig(token) {
 	});
 	return true;
 }
+//#endregion
+//#region src/utils/package.ts
+function packageMetadata() {
+	let directory = process.cwd();
+	while (true) {
+		const file = join(directory, "package.json");
+		if (existsSync(file)) {
+			const packageJson = JSON.parse(readFileSync(file, "utf8"));
+			if (packageJson.name && packageJson.version) return {
+				name: packageJson.name,
+				version: packageJson.version
+			};
+		}
+		const parent = dirname(directory);
+		if (parent === directory) break;
+		directory = parent;
+	}
+	throw new Error("No package.json with name and version found for the current working directory");
+}
+//#endregion
+//#region src/index.ts
 async function run() {
 	if (context.payload.pull_request?.head?.repo?.fork) {
 		core.info("Skipping Kubb snapshot: GitHub does not expose repository secrets to fork pull requests.");
@@ -204,18 +221,12 @@ async function run() {
 	}
 	const metadata = packageMetadata();
 	const repositoryId = String(context.payload.repository?.id ?? context.repo.repo);
-	const agent = await request("/api/agents", apiKey, {
-		method: "POST",
-		body: JSON.stringify({
-			name: `${context.repo.owner}/${context.repo.repo}`,
-			machineToken: machineToken(apiKey, repositoryId)
-		})
-	});
+	const agent = await createAgent(apiKey, `${context.repo.owner}/${context.repo.repo}`, repositoryId);
 	const agentInfo = agent.agent ?? agent;
 	const agentId = String(agentInfo.id);
 	const agentSlug = String(agentInfo.slug);
 	core.setSecret(String(agent.token));
-	const child = startStudio(String(agent.token));
+	const child = startStudio(studioUrl, String(agent.token));
 	try {
 		const snapshot = snapshotDetails(await createSnapshot(agentId, apiKey, metadata), agentId);
 		core.setOutput("snapshot-id", snapshot.id);
@@ -231,6 +242,6 @@ async function run() {
 }
 if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])) run().catch((error) => core.setFailed(error instanceof Error ? error.message : String(error)));
 //#endregion
-export { absoluteUrl, machineToken, run };
+export { run };
 
 //# sourceMappingURL=index.js.map
