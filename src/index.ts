@@ -17,7 +17,7 @@ export async function run(): Promise<void> {
   const apiKey = core.getInput('token', { required: true })
   const githubToken = core.getInput('github-token') || process.env.GITHUB_TOKEN || ''
   if (await initConfig(githubToken)) {
-    core.info('Initialized Kubb and opened a pull request. Snapshot generation will run after it is merged.')
+    core.info('Kubb configuration needs to merge before snapshot generation can run.')
     return
   }
 
