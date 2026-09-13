@@ -1,0 +1,3 @@
+minimumReleaseAge: 2880
+overrides:
+  yaml: 2.9.0
