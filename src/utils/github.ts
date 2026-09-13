@@ -31,8 +31,8 @@ export async function initConfig(token: string): Promise<boolean> {
   if (existsSync(join(process.cwd(), 'kubb.config.ts'))) return false
   const { owner, repo } = context.repo
   const defaultBranch = context.payload.repository?.default_branch ?? 'main'
-  if (token) {
-    const github = getOctokit(token)
+  const github = token ? getOctokit(token) : undefined
+  if (github) {
     const pulls = await github.paginate(github.rest.pulls.list, { owner, repo, base: defaultBranch, state: 'open' })
     if (pulls.some((pull: Pull) => pull.head.repo?.full_name === `${owner}/${repo}` && pull.head.ref.startsWith('kubb/init-'))) return true
   }
@@ -45,8 +45,7 @@ export async function initConfig(token: string): Promise<boolean> {
   await runCommand('git', ['add', '-A'])
   await runCommand('git', ['commit', '-m', 'chore: initialize Kubb'])
   await runCommand('git', ['push', '--set-upstream', 'origin', branch])
-  if (!token || !context.issue.number) return true
-  const github = getOctokit(token)
+  if (!github || !context.issue.number) return true
   await github.rest.pulls.create({
     owner,
     repo,

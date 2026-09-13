@@ -7,8 +7,6 @@ import { packageMetadata } from './utils/package.js'
 import { startStudio, stop } from './utils/process.js'
 import { createAgent, createSnapshot, snapshotDetails, studioUrl } from './utils/studio.js'
 
-type Json = Record<string, unknown>
-
 export async function run(): Promise<void> {
   if (context.payload.pull_request?.head?.repo?.fork) {
     core.info('Skipping Kubb snapshot: GitHub does not expose repository secrets to fork pull requests.')
@@ -24,20 +22,17 @@ export async function run(): Promise<void> {
   const metadata = packageMetadata()
   const repositoryId = String(context.payload.repository?.id ?? context.repo.repo)
   const agent = await createAgent(apiKey, `${context.repo.owner}/${context.repo.repo}`, repositoryId)
-  const agentInfo = (agent.agent ?? agent) as Json
-  const agentId = String(agentInfo.id)
-  const agentSlug = String(agentInfo.slug)
-  core.setSecret(String(agent.token))
-  const child = startStudio(studioUrl, String(agent.token))
+  core.setSecret(agent.token)
+  const child = startStudio(studioUrl, agent.token)
   try {
-    const snapshot = snapshotDetails(await createSnapshot(agentId, apiKey, metadata), agentId)
+    const snapshot = snapshotDetails(await createSnapshot(agent.id, apiKey, metadata), agent.id)
     core.setOutput('snapshot-id', snapshot.id)
     core.setOutput('package-name', snapshot.name)
     core.setOutput('package-version', snapshot.version)
     core.setOutput('tarball-url', snapshot.url)
     core.setOutput('integrity', snapshot.integrity)
-    core.setOutput('agent-url', `${studioUrl}/agents/${agentSlug}`)
-    await updateComment(snapshot, agentSlug, githubToken)
+    core.setOutput('agent-url', `${studioUrl}/agents/${agent.slug}`)
+    await updateComment(snapshot, agent.slug, githubToken)
   } finally {
     stop(child)
   }
