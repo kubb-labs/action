@@ -29,6 +29,10 @@ export async function run(): Promise<void> {
   core.setSecret(agent.token)
   const child = startStudio(studioUrl, agent.token, config, machineSecret(machineId))
   try {
+    // Temporary workaround for the Studio agent registration race.
+    // Remove once kubb-labs/platform#535/#536 provide proper readiness/queue semantics.
+    await new Promise((resolveDelay) => setTimeout(resolveDelay, 3_000))
+
     const snapshot = snapshotDetails(await createSnapshot(agent.id, apiKey, metadata), agent.id)
     core.setOutput('snapshot-id', snapshot.id)
     core.setOutput('package-name', snapshot.name)
