@@ -7,6 +7,17 @@ import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 type Json = Record<string, unknown>
+type Snapshot = {
+  id: unknown
+  integrity: unknown
+  expiresAt: unknown
+  url: unknown
+  name?: unknown
+  packageName?: unknown
+  version?: unknown
+  packageVersion?: unknown
+}
+type SnapshotDetails = { id: unknown; integrity: unknown; expiresAt: unknown; name: string; version: string; url: string }
 
 const studioUrl = (process.env.KUBB_STUDIO_URL ?? 'https://kubb.studio').replace(/\/$/, '')
 const marker = '<!-- kubb-studio-snapshot -->'
@@ -51,13 +62,8 @@ export function machineToken(apiKey: string, repositoryId: string): string {
   return createHmac('sha256', apiKey).update(`gh:${repositoryId}`).digest('hex')
 }
 
-export function live(body: Json): boolean {
-  if (typeof body.wsUrl === 'string') return true
-  return Object.entries(body).some(([key, value]) => {
-    const name = key.toLowerCase()
-    if (typeof value === 'boolean') return value && ['connected', 'ready', 'online', 'live'].includes(name)
-    return typeof value === 'string' && ['connected', 'ready', 'online', 'live'].includes(value.toLowerCase())
-  })
+export function absoluteUrl(path: string): string {
+  return new URL(path, `${studioUrl}/`).toString()
 }
 
 function runCommand(command: string, args: string[], env = process.env): Promise<void> {
@@ -80,32 +86,45 @@ function startStudio(agentToken: string): ChildProcess {
   })
 }
 
-async function waitForAgent(agentId: string, token: string): Promise<Json> {
+async function createSnapshot(agentId: string, token: string, metadata: { name: string; version: string }): Promise<Snapshot> {
   for (let attempt = 0; attempt < 60; attempt++) {
     try {
-      const body = await request(`/api/agents/${agentId}`, token)
-      if (live(body) || live((body.agent as Json | undefined) ?? {})) return body
+      return (await request('/api/snapshots', token, {
+        method: 'POST',
+        body: JSON.stringify({ agentId, name: metadata.name, version: metadata.version, commitSha: context.sha }),
+      })) as Snapshot
     } catch (error) {
-      if (!(error instanceof Error && error.message.startsWith('Kubb Studio 404:'))) throw error
+      if (!(error instanceof Error && error.message.startsWith('Kubb Studio 503:'))) throw error
     }
     await new Promise((resolveWait) => setTimeout(resolveWait, 1000))
   }
-  throw new Error('Timed out waiting for the Kubb Studio agent session')
+  throw new Error('Timed out waiting for the Kubb Studio agent to connect')
 }
 
-async function updateComment(snapshot: Json, token: string): Promise<void> {
+function snapshotDetails(snapshot: Snapshot, agentId: string): SnapshotDetails {
+  return {
+    id: snapshot.id,
+    integrity: snapshot.integrity,
+    expiresAt: snapshot.expiresAt,
+    name: String(snapshot.packageName ?? snapshot.name ?? `@kubb/snapshot-${agentId}`),
+    version: String(snapshot.packageVersion ?? snapshot.version ?? '0.0.0'),
+    url: absoluteUrl(String(snapshot.url)),
+  }
+}
+
+async function updateComment(snapshot: SnapshotDetails, agentSlug: string, token: string): Promise<void> {
   if (!token || !context.issue.number) return
   const github = getOctokit(token)
   const { owner, repo } = context.repo
   const body = [
     marker,
-    `### Kubb snapshot — ${snapshot.name ?? 'package'}@${snapshot.version ?? 'unknown'}`,
+    `### Kubb snapshot — ${snapshot.name}@${snapshot.version}`,
     '',
-    `${snapshot.fileCount ?? 0} files · ${snapshot.sizeBytes ?? 0} bytes · expires ${snapshot.expiresAt ?? 'soon'}`,
+    `Expires ${snapshot.expiresAt ?? 'soon'}`,
     '',
-    `[Install the snapshot](${snapshot.url ?? ''})`,
+    `[Install the snapshot](${snapshot.url})`,
     '',
-    `Agent: ${studioUrl}/agents/${snapshot.agentId ?? ''}`,
+    `Agent: ${studioUrl}/agents/${agentSlug}`,
   ].join('\n')
   const comments = await github.paginate(github.rest.issues.listComments, { owner, repo, issue_number: context.issue.number })
   const existing = comments.find((item: { body?: string }) => item.body?.includes(marker))
@@ -157,21 +176,18 @@ export async function run(): Promise<void> {
   })
   const agentInfo = (agent.agent ?? agent) as Json
   const agentId = String(agentInfo.id)
+  const agentSlug = String(agentInfo.slug)
   core.setSecret(String(agent.token))
   const child = startStudio(String(agent.token))
   try {
-    await waitForAgent(agentId, apiKey)
-    const snapshot = await request('/api/snapshots', apiKey, {
-      method: 'POST',
-      body: JSON.stringify({ agentId, name: metadata.name, version: metadata.version, commitSha: context.sha }),
-    })
+    const snapshot = snapshotDetails(await createSnapshot(agentId, apiKey, metadata), agentId)
     core.setOutput('snapshot-id', snapshot.id)
-    core.setOutput('package-name', snapshot.name ?? metadata.name)
-    core.setOutput('package-version', snapshot.version ?? metadata.version)
+    core.setOutput('package-name', snapshot.name)
+    core.setOutput('package-version', snapshot.version)
     core.setOutput('tarball-url', snapshot.url)
     core.setOutput('integrity', snapshot.integrity)
-    core.setOutput('agent-url', `${studioUrl}/agents/${agentId}`)
-    await updateComment({ ...snapshot, agentId }, githubToken)
+    core.setOutput('agent-url', `${studioUrl}/agents/${agentSlug}`)
+    await updateComment(snapshot, agentSlug, githubToken)
   } finally {
     stop(child)
   }

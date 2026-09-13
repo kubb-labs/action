@@ -51,23 +51,8 @@ function packageMetadata() {
 function machineToken(apiKey, repositoryId) {
 	return createHmac("sha256", apiKey).update(`gh:${repositoryId}`).digest("hex");
 }
-function live(body) {
-	if (typeof body.wsUrl === "string") return true;
-	return Object.entries(body).some(([key, value]) => {
-		const name = key.toLowerCase();
-		if (typeof value === "boolean") return value && [
-			"connected",
-			"ready",
-			"online",
-			"live"
-		].includes(name);
-		return typeof value === "string" && [
-			"connected",
-			"ready",
-			"online",
-			"live"
-		].includes(value.toLowerCase());
-	});
+function absoluteUrl(path) {
+	return new URL(path, `${studioUrl}/`).toString();
 }
 function runCommand(command, args, env = process.env) {
 	return new Promise((resolveCommand, reject) => {
@@ -97,31 +82,48 @@ function startStudio(agentToken) {
 		stdio: "inherit"
 	});
 }
-async function waitForAgent(agentId, token) {
+async function createSnapshot(agentId, token, metadata) {
 	for (let attempt = 0; attempt < 60; attempt++) {
 		try {
-			const body = await request(`/api/agents/${agentId}`, token);
-			if (live(body) || live(body.agent ?? {})) return body;
+			return await request("/api/snapshots", token, {
+				method: "POST",
+				body: JSON.stringify({
+					agentId,
+					name: metadata.name,
+					version: metadata.version,
+					commitSha: context.sha
+				})
+			});
 		} catch (error) {
-			if (!(error instanceof Error && error.message.startsWith("Kubb Studio 404:"))) throw error;
+			if (!(error instanceof Error && error.message.startsWith("Kubb Studio 503:"))) throw error;
 		}
 		await new Promise((resolveWait) => setTimeout(resolveWait, 1e3));
 	}
-	throw new Error("Timed out waiting for the Kubb Studio agent session");
+	throw new Error("Timed out waiting for the Kubb Studio agent to connect");
 }
-async function updateComment(snapshot, token) {
+function snapshotDetails(snapshot, agentId) {
+	return {
+		id: snapshot.id,
+		integrity: snapshot.integrity,
+		expiresAt: snapshot.expiresAt,
+		name: String(snapshot.packageName ?? snapshot.name ?? `@kubb/snapshot-${agentId}`),
+		version: String(snapshot.packageVersion ?? snapshot.version ?? "0.0.0"),
+		url: absoluteUrl(String(snapshot.url))
+	};
+}
+async function updateComment(snapshot, agentSlug, token) {
 	if (!token || !context.issue.number) return;
 	const github = getOctokit(token);
 	const { owner, repo } = context.repo;
 	const body = [
 		marker,
-		`### Kubb snapshot — ${snapshot.name ?? "package"}@${snapshot.version ?? "unknown"}`,
+		`### Kubb snapshot — ${snapshot.name}@${snapshot.version}`,
 		"",
-		`${snapshot.fileCount ?? 0} files · ${snapshot.sizeBytes ?? 0} bytes · expires ${snapshot.expiresAt ?? "soon"}`,
+		`Expires ${snapshot.expiresAt ?? "soon"}`,
 		"",
-		`[Install the snapshot](${snapshot.url ?? ""})`,
+		`[Install the snapshot](${snapshot.url})`,
 		"",
-		`Agent: ${studioUrl}/agents/${snapshot.agentId ?? ""}`
+		`Agent: ${studioUrl}/agents/${agentSlug}`
 	].join("\n");
 	const existing = (await github.paginate(github.rest.issues.listComments, {
 		owner,
@@ -211,35 +213,24 @@ async function run() {
 	});
 	const agentInfo = agent.agent ?? agent;
 	const agentId = String(agentInfo.id);
+	const agentSlug = String(agentInfo.slug);
 	core.setSecret(String(agent.token));
 	const child = startStudio(String(agent.token));
 	try {
-		await waitForAgent(agentId, apiKey);
-		const snapshot = await request("/api/snapshots", apiKey, {
-			method: "POST",
-			body: JSON.stringify({
-				agentId,
-				name: metadata.name,
-				version: metadata.version,
-				commitSha: context.sha
-			})
-		});
+		const snapshot = snapshotDetails(await createSnapshot(agentId, apiKey, metadata), agentId);
 		core.setOutput("snapshot-id", snapshot.id);
-		core.setOutput("package-name", snapshot.name ?? metadata.name);
-		core.setOutput("package-version", snapshot.version ?? metadata.version);
+		core.setOutput("package-name", snapshot.name);
+		core.setOutput("package-version", snapshot.version);
 		core.setOutput("tarball-url", snapshot.url);
 		core.setOutput("integrity", snapshot.integrity);
-		core.setOutput("agent-url", `${studioUrl}/agents/${agentId}`);
-		await updateComment({
-			...snapshot,
-			agentId
-		}, githubToken);
+		core.setOutput("agent-url", `${studioUrl}/agents/${agentSlug}`);
+		await updateComment(snapshot, agentSlug, githubToken);
 	} finally {
 		stop(child);
 	}
 }
 if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])) run().catch((error) => core.setFailed(error instanceof Error ? error.message : String(error)));
 //#endregion
-export { live, machineToken, run };
+export { absoluteUrl, machineToken, run };
 
 //# sourceMappingURL=index.js.map
