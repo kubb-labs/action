@@ -1,7 +1,12 @@
 import { defineConfig, type UserConfig } from 'tsdown'
 
 const shared: Partial<UserConfig> = {
+  deps: {
+    alwaysBundle: ['@actions/core', '@actions/github'],
+    onlyBundle: false,
+  },
   platform: 'node',
+  minify: true,
   sourcemap: true,
   shims: true,
   fixedExtension: false,

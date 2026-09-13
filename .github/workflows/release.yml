@@ -1,0 +1,67 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.changeset/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/release.yml'
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  version:
+    name: Version packages
+    if: github.repository_owner == 'kubb-labs'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - uses: kubb-labs/config/.github/setup@da8a350ddbedb4dd9cf54b05b7ef1a4298c4f0dc # main
+        with:
+          node-version: '22.22.3'
+          cache: 'false'
+      - uses: changesets/action@8488615a623b1b9c987934bb89eae8af6a946ac1 # v2.1.1
+        with:
+          version: pnpm exec changeset version
+          commit: 'ci(changesets): version packages'
+          title: 'ci(changesets): version packages'
+          createGithubReleases: false
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+  tag:
+    name: Tag release
+    if: >-
+      github.repository_owner == 'kubb-labs' &&
+      (github.event_name == 'workflow_dispatch' || startsWith(github.event.head_commit.message, 'ci(changesets): version packages'))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - name: Tag the version
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          version="$(node -p "require('./package.json').version")"
+          tag="v${version}"
+          git fetch --tags origin
+          if git rev-parse "$tag" >/dev/null 2>&1; then
+            exit 0
+          fi
+          git tag "$tag"
+          git push origin "$tag"
+          major="v${version%%.*}"
+          git tag -f "$major"
+          git push --force origin "$major"
+          gh release create "$tag" --title "$tag" --generate-notes

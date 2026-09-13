@@ -1,8 +1,6 @@
 # Kubb GitHub Action
 
-The Kubb GitHub Action generates a package snapshot from CI and publishes it to Kubb Studio.
-
-The action is currently scaffolded. Snapshot generation and publishing will be added in the implementation task.
+The Kubb GitHub Action generates a package snapshot from CI and publishes it to Kubb Studio. It reuses one CI agent per repository, updates one pull-request comment, and skips fork pull requests because their secrets are unavailable.
 
 ```yaml
 name: Kubb snapshot
@@ -18,7 +16,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - uses: kubb-labs/action@main
+      - uses: kubb-labs/action@v1
         with:
           token: ${{ secrets.KUBB_TOKEN }}
 ```
+
+The repository needs `KUBB_TOKEN` in Actions secrets. Set `KUBB_STUDIO_URL` only for a self-hosted Studio deployment; the default is `https://kubb.studio`.
