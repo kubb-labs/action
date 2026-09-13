@@ -8,6 +8,10 @@ inputs:
   token:
     description: Kubb Studio CI token
     required: true
+  github-token:
+    description: GitHub token used to open the initialization pull request and update the snapshot comment
+    default: ${{ github.token }}
+    required: false
 outputs:
   snapshot-id:
     description: ID of the generated snapshot
