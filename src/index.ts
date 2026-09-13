@@ -13,9 +13,10 @@ export async function run(): Promise<void> {
     return
   }
   process.chdir(resolve(process.cwd(), core.getInput('working-directory') || '.'))
+  const config = core.getInput('config') || 'kubb.config.ts'
   const apiKey = core.getInput('token', { required: true })
   const githubToken = core.getInput('github-token') || process.env.GITHUB_TOKEN || ''
-  if (await initConfig(githubToken)) {
+  if (await initConfig(githubToken, config)) {
     core.info('Kubb configuration needs to merge before snapshot generation can run.')
     return
   }
@@ -24,7 +25,7 @@ export async function run(): Promise<void> {
   const repositoryId = String(context.payload.repository?.id ?? context.repo.repo)
   const agent = await createAgent(apiKey, `${context.repo.owner}/${context.repo.repo}`, repositoryId)
   core.setSecret(agent.token)
-  const child = startStudio(studioUrl, agent.token)
+  const child = startStudio(studioUrl, agent.token, config)
   try {
     const snapshot = snapshotDetails(await createSnapshot(agent.id, apiKey, metadata), agent.id)
     core.setOutput('snapshot-id', snapshot.id)

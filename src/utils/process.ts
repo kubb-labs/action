@@ -8,9 +8,9 @@ export function runCommand(command: string, args: string[], env = process.env): 
   })
 }
 
-export function startStudio(url: string, agentToken: string): ChildProcess {
+export function startStudio(url: string, agentToken: string, config = 'kubb.config.ts'): ChildProcess {
   const { INPUT_TOKEN: _inputToken, KUBB_TOKEN: _kubbToken, ...safeEnv } = process.env
-  return spawn('npx', ['kubb', 'studio', '--url', url], { env: { ...safeEnv, KUBB_AGENT_TOKEN: agentToken }, stdio: 'inherit' })
+  return spawn('npx', ['kubb', 'studio', '--url', url, '--config', config], { env: { ...safeEnv, KUBB_AGENT_TOKEN: agentToken }, stdio: 'inherit' })
 }
 
 export function stop(child: ChildProcess): void {

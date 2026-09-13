@@ -16,6 +16,10 @@ inputs:
     description: Directory containing the Kubb configuration and package
     default: .
     required: false
+  config:
+    description: Path to the Kubb config file, relative to working-directory
+    default: kubb.config.ts
+    required: false
 outputs:
   snapshot-id:
     description: ID of the generated snapshot

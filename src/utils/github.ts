@@ -1,6 +1,6 @@
 import { context, getOctokit } from '@actions/github'
-import { existsSync } from 'node:fs'
-import { join } from 'node:path'
+import { existsSync, mkdirSync, renameSync } from 'node:fs'
+import { dirname, resolve } from 'node:path'
 import { runCommand } from './process.js'
 import { type SnapshotDetails, studioUrl } from './studio.js'
 
@@ -27,8 +27,10 @@ export async function updateComment(snapshot: SnapshotDetails, agentSlug: string
   else await github.rest.issues.createComment({ owner, repo, issue_number: context.issue.number, body })
 }
 
-export async function initConfig(token: string): Promise<boolean> {
-  if (existsSync(join(process.cwd(), 'kubb.config.ts'))) return false
+export async function initConfig(token: string, config = 'kubb.config.ts'): Promise<boolean> {
+  const workingDirectory = process.cwd()
+  const configPath = resolve(config)
+  if (existsSync(configPath)) return false
   const { owner, repo } = context.repo
   const defaultBranch = context.payload.repository?.default_branch ?? 'main'
   const github = token ? getOctokit(token) : undefined
@@ -39,7 +41,15 @@ export async function initConfig(token: string): Promise<boolean> {
   const branch = `kubb/init-${context.runId}`
   await runCommand('git', ['fetch', 'origin', defaultBranch])
   await runCommand('git', ['switch', '-c', branch, `origin/${defaultBranch}`])
-  await runCommand('npx', ['kubb', 'init', '--yes'])
+  const configDirectory = dirname(configPath)
+  mkdirSync(configDirectory, { recursive: true })
+  process.chdir(configDirectory)
+  try {
+    await runCommand('npx', ['kubb', 'init', '--yes'])
+    if (configPath !== resolve(configDirectory, 'kubb.config.ts')) renameSync(resolve(configDirectory, 'kubb.config.ts'), configPath)
+  } finally {
+    process.chdir(workingDirectory)
+  }
   await runCommand('git', ['config', 'user.name', 'github-actions[bot]'])
   await runCommand('git', ['config', 'user.email', '41898282+github-actions[bot]@users.noreply.github.com'])
   await runCommand('git', ['add', '-A'])
