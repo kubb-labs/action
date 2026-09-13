@@ -45,7 +45,7 @@ export async function initConfig(token: string): Promise<boolean> {
   await runCommand('git', ['add', '-A'])
   await runCommand('git', ['commit', '-m', 'chore: initialize Kubb'])
   await runCommand('git', ['push', '--set-upstream', 'origin', branch])
-  if (!github || !context.issue.number) return true
+  if (!github) return true
   await github.rest.pulls.create({
     owner,
     repo,
