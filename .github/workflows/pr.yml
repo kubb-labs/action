@@ -1,0 +1,22 @@
+name: PR
+
+on:
+  pull_request:
+
+permissions: {}
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: kubb-labs/config/.github/setup@da8a350ddbedb4dd9cf54b05b7ef1a4298c4f0dc # main
+        with:
+          node-version: '22.22.3'
+      - run: pnpm run format
+      - run: pnpm run typecheck
+      - run: pnpm run lint
+      - run: pnpm test
+      - run: pnpm run build
