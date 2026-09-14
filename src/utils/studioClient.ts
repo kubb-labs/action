@@ -32,11 +32,12 @@ export async function connectAndWaitUntilReady(config: string, agentToken: strin
       if (!loggedPlugins) {
         const require = createRequire(configPath)
         const plugins = (loadedConfig.plugins ?? []).map((plugin) => {
+          const packageName = plugin.name.startsWith('plugin-') ? `@kubb/${plugin.name}` : plugin.name
           try {
-            require.resolve(`${plugin.name}/package.json`)
-            return `${plugin.name} (ok)`
+            require.resolve(`${packageName}/package.json`)
+            return `${packageName} (ok)`
           } catch {
-            return `${plugin.name} (missing)`
+            return `${packageName} (missing)`
           }
         })
         core.info(`Kubb config plugins: ${plugins.join(', ') || '(none)'}`)
