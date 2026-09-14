@@ -13,7 +13,7 @@ export async function run(): Promise<void> {
     return
   }
   process.chdir(resolve(process.cwd(), core.getInput('working-directory') || '.'))
-  const config = core.getInput('config') || 'kubb.config.ts'
+  const config = resolve(process.cwd(), core.getInput('config') || 'kubb.config.ts')
   const apiKey = core.getInput('token', { required: true })
   const githubToken = core.getInput('github-token') || process.env.GITHUB_TOKEN || ''
   if (await initConfig(githubToken, config)) {
