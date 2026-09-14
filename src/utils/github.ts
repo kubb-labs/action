@@ -19,6 +19,10 @@ export async function updateComment(snapshot: SnapshotDetails, agentSlug: string
     '',
     `[Install the snapshot](${snapshot.url})`,
     '',
+    '```sh',
+    `npm i ${snapshot.url}`,
+    '```',
+    '',
     `Agent: ${studioUrl}/agents/${agentSlug}`,
   ].join('\n')
   const comments = await github.paginate(github.rest.issues.listComments, { owner, repo, issue_number: context.issue.number })
