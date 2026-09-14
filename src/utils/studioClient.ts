@@ -15,7 +15,7 @@ export const READY_TIMEOUT_MS = 15_000
  * receive jobs (`studio:ready`), not merely once the socket is open.
  */
 export async function connectAndWaitUntilReady(config: string, agentToken: string): Promise<ReturnType<typeof createClient>> {
-  const { promise: ready, resolve: markReady } = Promise.withResolvers<void>()
+  const { promise: ready, reject: markFailed, resolve: markReady } = Promise.withResolvers<void>()
   const client = createClient({
     studioUrl,
     token: agentToken,
@@ -28,7 +28,10 @@ export async function connectAndWaitUntilReady(config: string, agentToken: strin
       hooks.hook('studio:ready', () => markReady())
       hooks.hook('studio:connected', ({ url }) => core.info(`Connected to ${url}`))
       hooks.hook('studio:warn', ({ message }) => core.warning(message))
-      hooks.hook('studio:error', ({ error }) => core.warning(error.message))
+      hooks.hook('studio:error', ({ error }) => {
+        core.warning(error.message)
+        markFailed(error)
+      })
     },
   })
 

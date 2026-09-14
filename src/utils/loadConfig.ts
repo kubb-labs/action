@@ -41,6 +41,6 @@ export async function loadConfig(configPath: string): Promise<Config> {
       ? `Kubb config at "${absolutePath}" imports "${missingModule}", which is not installed. Add it to the repository's dependencies.`
       : (e.message ?? String(error))
 
-    throw new Error('Config failed loading', { cause: message === e.message ? error : new Error(message, { cause: error }) })
+    throw new Error(`Config failed loading: ${message}`, { cause: error })
   }
 }
