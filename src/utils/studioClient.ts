@@ -1,5 +1,7 @@
 import * as core from '@actions/core'
 import { createClient } from '@kubb/studio'
+import { createRequire } from 'node:module'
+import { resolve } from 'node:path'
 import { loadConfig } from './loadConfig.js'
 import { actionVersion } from './package.js'
 import { studioUrl } from './studio.js'
@@ -16,6 +18,8 @@ export const READY_TIMEOUT_MS = 15_000
  */
 export async function connectAndWaitUntilReady(config: string, agentToken: string): Promise<ReturnType<typeof createClient>> {
   const { promise: ready, reject: markFailed, resolve: markReady } = Promise.withResolvers<void>()
+  const configPath = resolve(process.cwd(), config)
+  let loggedPlugins = false
   const client = createClient({
     studioUrl,
     token: agentToken,
@@ -23,7 +27,23 @@ export async function connectAndWaitUntilReady(config: string, agentToken: strin
     root: process.cwd(),
     version: actionVersion(),
     client: { kind: 'ci' },
-    loadConfig: () => loadConfig(config),
+    loadConfig: async () => {
+      const loadedConfig = await loadConfig(configPath)
+      if (!loggedPlugins) {
+        const require = createRequire(configPath)
+        const plugins = (loadedConfig.plugins ?? []).map((plugin) => {
+          try {
+            require.resolve(`${plugin.name}/package.json`)
+            return `${plugin.name} (ok)`
+          } catch {
+            return `${plugin.name} (missing)`
+          }
+        })
+        core.info(`Kubb config plugins: ${plugins.join(', ') || '(none)'}`)
+        loggedPlugins = true
+      }
+      return loadedConfig
+    },
     installLogger: (hooks) => {
       hooks.hook('studio:ready', () => markReady())
       hooks.hook('studio:connected', ({ url }) => core.info(`Connected to ${url}`))
