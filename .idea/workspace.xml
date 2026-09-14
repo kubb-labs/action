@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="b133de28-eb4b-480a-8436-6eb2f75a0306" name="Changes" comment="cleanup" />
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="ChangesViewManager">
+    <option name="groupingKeys">
+      <option value="directory" />
+      <option value="repository" />
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="GitHubPullRequestSearchHistory"><![CDATA[{
+  "lastFilter": {
+    "state": "OPEN",
+    "assignee": "stijnvanhulle"
+  }
+}]]></component>
+  <component name="GithubProjectSettings">
+    <option name="branchProtectionPatterns">
+      <list>
+        <option value="main" />
+      </list>
+    </option>
+  </component>
+  <component name="GithubPullRequestsUISettings"><![CDATA[{
+  "selectedUrlAndAccountId": {
+    "url": "https://github.com/kubb-labs/action.git",
+    "accountId": "aa99f85b-724b-4cb1-be7a-8556250e8ba9"
+  }
+}]]></component>
+  <component name="McpProjectServerCommands">
+    <commands />
+    <urls />
+  </component>
+  <component name="NextEditCompletionFeaturesState">
+    <decayedCancelled>
+      <entry key="MS100" value="1.6021753943463117" />
+      <entry key="MS500" value="3.7529808062721743" />
+      <entry key="S2" value="6.73160485682146" />
+      <entry key="S5" value="7.959710717244925" />
+      <entry key="S10" value="8.454321293142712" />
+      <entry key="S30" value="8.812075237352156" />
+      <entry key="S60" value="8.905260050783367" />
+      <entry key="M2" value="8.952433816031277" />
+      <entry key="M5" value="8.980926201460537" />
+      <entry key="M10" value="8.99045519359214" />
+      <entry key="M15" value="8.993635037127891" />
+      <entry key="M30" value="8.996816638988525" />
+      <entry key="H1" value="8.998433138271032" />
+      <entry key="H2" value="9.01244269636781" />
+      <entry key="H4" value="9.304019134457228" />
+      <entry key="D1" value="13.150998583905132" />
+      <entry key="W1" value="15.496472582413787" />
+    </decayedCancelled>
+    <decayedSelected>
+      <entry key="MS100" value="0.0" />
+      <entry key="MS500" value="0.0" />
+      <entry key="S2" value="0.0" />
+      <entry key="S5" value="0.0" />
+      <entry key="S10" value="0.0" />
+      <entry key="S30" value="0.0" />
+      <entry key="S60" value="0.0" />
+      <entry key="M2" value="0.0" />
+      <entry key="M5" value="0.0" />
+      <entry key="M10" value="0.0" />
+      <entry key="M15" value="0.0" />
+      <entry key="M30" value="0.0" />
+      <entry key="H1" value="0.0" />
+      <entry key="H2" value="0.0" />
+      <entry key="H4" value="0.0" />
+      <entry key="D1" value="0.0" />
+      <entry key="W1" value="0.0" />
+    </decayedSelected>
+    <decayedShown>
+      <entry key="MS100" value="1.5285560368653957" />
+      <entry key="MS500" value="3.710123952069934" />
+      <entry key="S2" value="6.70969557511619" />
+      <entry key="S5" value="7.949213920454979" />
+      <entry key="S10" value="8.44873181933712" />
+      <entry key="S30" value="8.81013069487053" />
+      <entry key="S60" value="8.904277236154687" />
+      <entry key="M2" value="8.951939744270353" />
+      <entry key="M5" value="8.98072792959276" />
+      <entry key="M10" value="8.990355950154843" />
+      <entry key="M15" value="8.993568850923731" />
+      <entry key="M30" value="8.996783533924381" />
+      <entry key="H1" value="8.998416582726033" />
+      <entry key="H2" value="9.01243441221615" />
+      <entry key="H4" value="9.304014930136379" />
+      <entry key="D1" value="13.15099774649678" />
+      <entry key="W1" value="15.496472450878684" />
+    </decayedShown>
+  </component>
+  <component name="ProjectColorInfo"><![CDATA[{
+  "associatedIndex": 6,
+  "fromUser": false
+}]]></component>
+  <component name="ProjectId" id="3JI5tZ79lOuexWsy3n3dzWR6kMA" />
+  <component name="ProjectViewState">
+    <option name="autoscrollToSource" value="true" />
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="openDirectoriesWithSingleClick" value="true" />
+    <option name="showLibraryContents" value="true" />
+    <option name="showVisibilityIcons" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.MCP Project settings loaded": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
+    "git-widget-placeholder": "main",
+    "javascript.preferred.runtime.type.id": "node",
+    "last_opened_file_path": "/Users/stijnvanhulle/GitHub/action",
+    "node.js.detected.package.eslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "nodejs_package_manager_path": "pnpm",
+    "python.packages.toolwindow.project.migrated.to.right.top.v2": "true",
+    "ts.external.directory.path": "/Users/stijnvanhulle/GitHub/action/node_modules/typescript/lib"
+  }
+}]]></component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-js-predefined-d6986cc7102b-31b97525b52c-JavaScript-WS-263.4732.34" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="b133de28-eb4b-480a-8436-6eb2f75a0306" name="Changes" comment="" />
+      <created>1789335956665</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1789335956665</updated>
+      <workItem from="1789335957673" duration="2078000" />
+    </task>
+    <task id="LOCAL-00001" summary="Race condition fix">
+      <option name="closed" value="true" />
+      <created>1789336356897</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1789336356897</updated>
+    </task>
+    <task id="LOCAL-00002" summary="cleanup">
+      <option name="closed" value="true" />
+      <created>1789336513694</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1789336513695</updated>
+    </task>
+    <task id="LOCAL-00003" summary="cleanup">
+      <option name="closed" value="true" />
+      <created>1789363946806</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1789363946806</updated>
+    </task>
+    <option name="localTasksCounter" value="4" />
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="Race condition fix" />
+    <MESSAGE value="cleanup" />
+    <option name="LAST_COMMIT_MESSAGE" value="cleanup" />
+  </component>
+</project>
