@@ -2,7 +2,7 @@ import path from 'node:path'
 import type { Config, PossibleConfig } from '@kubb/core'
 import { createJiti } from 'jiti'
 
-const jiti = createJiti(import.meta.url, { moduleCache: false })
+const jiti = createJiti(import.meta.url, { moduleCache: false, tryNative: true })
 
 /**
  * Extracts the module specifier Node couldn't resolve from a `MODULE_NOT_FOUND` error message,
