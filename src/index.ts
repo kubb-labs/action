@@ -1,6 +1,7 @@
 import * as core from '@actions/core'
 import { context } from '@actions/github'
-import { resolve } from 'node:path'
+import { delimiter, resolve } from 'node:path'
+import Module from 'node:module'
 import { fileURLToPath } from 'node:url'
 import { initConfig, updateComment } from './utils/github.js'
 import { packageMetadata } from './utils/package.js'
@@ -14,6 +15,8 @@ export async function run(): Promise<void> {
   }
   process.chdir(resolve(process.cwd(), core.getInput('working-directory') || '.'))
   const config = resolve(process.cwd(), core.getInput('config') || 'kubb.config.ts')
+  process.env.NODE_PATH = [process.env.NODE_PATH, resolve(process.cwd(), 'node_modules')].filter(Boolean).join(delimiter)
+  ;(Module as typeof Module & { _initPaths(): void })._initPaths()
   const apiKey = core.getInput('token', { required: true })
   const githubToken = core.getInput('github-token') || process.env.GITHUB_TOKEN || ''
   if (await initConfig(githubToken, config)) {
