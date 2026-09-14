@@ -11,19 +11,20 @@ export async function updateComment(snapshot: SnapshotDetails, agentSlug: string
   if (!token || !context.issue.number) return
   const github = getOctokit(token)
   const { owner, repo } = context.repo
+  const commitUrl = `https://github.com/${owner}/${repo}/commit/${context.sha}`
   const body = [
     marker,
     `### Kubb snapshot — ${snapshot.name}@${snapshot.version}`,
     '',
-    `Expires ${snapshot.expiresAt ?? 'soon'}`,
+    'Install this snapshot with npm:',
     '',
-    `[Install the snapshot](${snapshot.url})`,
-    '',
-    '```sh',
+    '```bash',
     `npm i ${snapshot.url}`,
     '```',
     '',
-    `Agent: ${studioUrl}/agents/${agentSlug}`,
+    `[Package](${snapshot.url}) · [Studio agent](${studioUrl}/agents/${agentSlug})`,
+    '',
+    `<sub>Expires ${snapshot.expiresAt ?? 'soon'} · commit <a href="${commitUrl}"><code>${context.sha.slice(0, 7)}</code></a></sub>`,
   ].join('\n')
   const comments = await github.paginate(github.rest.issues.listComments, { owner, repo, issue_number: context.issue.number })
   const existing = comments.find((item: { body?: string }) => item.body?.includes(marker))
