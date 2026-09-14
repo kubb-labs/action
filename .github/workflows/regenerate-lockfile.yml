@@ -1,0 +1,43 @@
+name: Regenerate lockfile
+
+on:
+  push:
+    branches:
+      - feat/direct-studio-client
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  regenerate:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        with:
+          version: 12.3.1
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '22.22.3'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Regenerate lockfile from scratch
+        run: |
+          rm -f pnpm-lock.yaml
+          pnpm install --lockfile-only
+
+      - name: Commit regenerated lockfile
+        run: |
+          git config user.email "stijn@stijnvanhulle.be"
+          git config user.name "Stijn Van Hulle"
+          git add pnpm-lock.yaml
+          git commit -m "fix: regenerate pnpm lockfile from scratch"
+          git push
