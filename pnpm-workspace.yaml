@@ -1,3 +1,9 @@
-minimumReleaseAge: 2880
+minimumReleaseAge: 2880 # 48 hours, matches CI's SAFE_CHAIN_MINIMUM_PACKAGE_AGE_HOURS
+minimumReleaseAgeExclude:
+  - '@kubb/*'
+  - 'kubb'
+  - 'unplugin-kubb'
+pmOnFail: ignore
+
 overrides:
   yaml: 2.9.0
