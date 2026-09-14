@@ -1,5 +1,5 @@
 ---
-"@kubb-labs/action": minor
+'@kubb-labs/action': minor
 ---
 
 Connect to Kubb Studio directly with `@kubb/studio`'s client instead of spawning `npx kubb studio` as a subprocess, and wait for its `studio:ready` acknowledgement before requesting a snapshot.
