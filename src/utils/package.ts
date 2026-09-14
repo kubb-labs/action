@@ -1,8 +1,9 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
-export function packageMetadata(): { name: string; version: string } {
-  let directory = process.cwd()
+function findPackageJson(startDirectory: string): { name: string; version: string } {
+  let directory = startDirectory
   while (true) {
     const file = join(directory, 'package.json')
     if (existsSync(file)) {
@@ -13,5 +14,18 @@ export function packageMetadata(): { name: string; version: string } {
     if (parent === directory) break
     directory = parent
   }
-  throw new Error('No package.json with name and version found for the current working directory')
+  throw new Error(`No package.json with name and version found above ${startDirectory}`)
+}
+
+/**
+ * This action's own version. Walks up from the running file's own directory rather than
+ * `process.cwd()` (the target repo's checkout, which is what {@link packageMetadata} reads), so it
+ * finds `action/package.json` whether running bundled from `dist/` or unbundled from `src/utils/`.
+ */
+export function actionVersion(): string {
+  return findPackageJson(dirname(fileURLToPath(import.meta.url))).version
+}
+
+export function packageMetadata(): { name: string; version: string } {
+  return findPackageJson(process.cwd())
 }

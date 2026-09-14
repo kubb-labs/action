@@ -4,8 +4,8 @@ import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { initConfig, updateComment } from './utils/github.js'
 import { packageMetadata } from './utils/package.js'
-import { startStudio, stop } from './utils/process.js'
 import { createAgent, createSnapshot, machineSecret, snapshotDetails, studioUrl } from './utils/studio.js'
+import { connectAndWaitUntilReady } from './utils/studioClient.js'
 
 export async function run(): Promise<void> {
   if (context.payload.pull_request?.head?.repo?.fork) {
@@ -27,12 +27,9 @@ export async function run(): Promise<void> {
   const machineId = `${repositoryId}:${pullRequestId}`
   const agent = await createAgent(apiKey, `${context.repo.owner}/${context.repo.repo}#${pullRequestId}`, machineId)
   core.setSecret(agent.token)
-  const child = startStudio(studioUrl, agent.token, config, machineSecret(machineId))
+  process.env.KUBB_AGENT_SECRET = machineSecret(machineId)
+  const client = await connectAndWaitUntilReady(config, agent.token)
   try {
-    // Temporary workaround for the Studio agent registration race.
-    // Remove once kubb-labs/platform#535/#536 provide proper readiness/queue semantics.
-    await new Promise((resolveDelay) => setTimeout(resolveDelay, 3_000))
-
     const snapshot = snapshotDetails(await createSnapshot(agent.id, apiKey, metadata), agent.id)
     core.setOutput('snapshot-id', snapshot.id)
     core.setOutput('package-name', snapshot.name)
@@ -42,7 +39,7 @@ export async function run(): Promise<void> {
     core.setOutput('agent-url', `${studioUrl}/agents/${agent.slug}`)
     await updateComment(snapshot, agent.slug, githubToken)
   } finally {
-    await stop(child)
+    client.disconnect()
   }
 }
 
