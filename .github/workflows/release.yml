@@ -40,7 +40,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
   tag:
-    name: Tag release
+    name: Build and tag release
     if: >-
       github.repository_owner == 'kubb-labs' &&
       (github.event_name == 'workflow_dispatch' || startsWith(github.event.head_commit.message, 'ci(changesets): version packages'))
@@ -51,6 +51,22 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+      - uses: kubb-labs/config/.github/setup@ec40df0e3e54565e006f6d92a2fce16ff43b14d8 # main
+        with:
+          node-version: '22.22.3'
+          cache: 'false'
+      - name: Build action
+        run: pnpm build
+      - name: Commit dist
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add dist
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m "ci: build action dist"
+          git push origin HEAD:main
       - name: Tag the version
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
