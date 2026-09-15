@@ -4,6 +4,7 @@ import { absoluteUrl, createSnapshot, machineToken } from '../src/utils/studio'
 afterEach(() => {
   vi.unstubAllGlobals()
   vi.useRealTimers()
+  vi.restoreAllMocks()
 })
 
 test('derives a stable per-PR machine token and resolves Studio URLs', () => {
@@ -26,7 +27,15 @@ test('creates a snapshot through the async jobs API', async () => {
           job: {
             id: 'job-1',
             status: 'success',
-            snapshot: { id: 'snap-1', name: '@kubb/demo', version: '1.0.0', integrity: 'sha512-abc', url: '/packages/demo.tgz', expiresAt: '2026-01-01' },
+            snapshot: {
+              id: 'snap-1',
+              name: '@kubb/demo',
+              version: '1.0.0',
+              integrity: 'sha512-abc',
+              url: '/packages/demo.tgz',
+              snapshotIdUrl: '/packages/snap-1/snapshot.tgz',
+              expiresAt: '2026-01-01',
+            },
           },
         }),
         { headers: { 'content-type': 'application/json' } },
@@ -35,7 +44,7 @@ test('creates a snapshot through the async jobs API', async () => {
   vi.stubGlobal('fetch', fetchMock)
 
   const promise = createSnapshot('agent-1', 'ci-token', { name: '@kubb/demo', version: '1.0.0' })
-  await vi.runAllTimersAsync()
+  await vi.advanceTimersByTimeAsync(1000)
 
   await expect(promise).resolves.toMatchObject({ id: 'snap-1', name: '@kubb/demo', version: '1.0.0' })
   expect(fetchMock.mock.calls[0]?.[0]).toBe('https://kubb.studio/api/jobs')

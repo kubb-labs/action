@@ -1,26 +1,10 @@
 import { createHash } from 'node:crypto'
+import { createJob, waitForJob, type StudioSnapshot } from '@kubb/studio'
 
 type Agent = { id: string; slug: string; token: string }
 type ErrorResponse = { message?: string; data?: { upgradeUrl?: string } }
-type JobStatus = 'queued' | 'running' | 'success' | 'failed'
-type Job = {
-  id: string
-  status: JobStatus
-  error?: string
-  snapshot?: Snapshot
-}
 
-export type Snapshot = {
-  id: string
-  integrity: string | null
-  expiresAt: string
-  url: string
-  name?: string | null
-  packageName?: string
-  version?: string | null
-  packageVersion?: string
-  snapshotIdUrl?: string
-}
+export type Snapshot = StudioSnapshot
 export type SnapshotDetails = { id: string; integrity: string; expiresAt: string; name: string; version: string; url: string }
 
 export const studioUrl = (process.env.KUBB_STUDIO_URL ?? 'https://kubb.studio').replace(/\/$/, '')
@@ -28,7 +12,7 @@ export const studioUrl = (process.env.KUBB_STUDIO_URL ?? 'https://kubb.studio').
 async function request<T>(path: string, token: string, init: RequestInit = {}): Promise<T> {
   const response = await fetch(`${studioUrl}${path}`, {
     ...init,
-    headers: { authorization: `Bearer ${token}`, 'x-api-key': token, 'content-type': 'application/json', ...init.headers },
+    headers: { 'x-api-key': token, 'content-type': 'application/json', ...init.headers },
   })
   const text = await response.text()
   let body: ErrorResponse = {}
@@ -62,28 +46,27 @@ export async function createAgent(token: string, name: string, repositoryId: str
 }
 
 /**
- * Queues a snapshot job on Studio and polls until it finishes. Replaces the old synchronous
- * `POST /api/snapshots` call.
+ * Queues a snapshot job on Studio (`POST /api/jobs`) and waits until it finishes.
+ *
+ * Thin wrapper around {@link createJob} and {@link waitForJob} from `@kubb/studio`. Replaces the
+ * old blocking `POST /api/snapshots` call.
  */
 export async function createSnapshot(agentId: string, token: string, metadata: { name: string; version: string }): Promise<Snapshot> {
-  const { job } = await request<{ job: Job }>('/api/jobs', token, {
-    method: 'POST',
-    body: JSON.stringify({ type: 'snapshot', agentId, name: metadata.name, version: metadata.version }),
+  const job = await createJob({
+    studioUrl,
+    token,
+    type: 'snapshot',
+    agentId,
+    name: metadata.name,
+    version: metadata.version,
   })
 
-  for (let attempt = 0; attempt < 60; attempt++) {
-    const { job: current } = await request<{ job: Job }>(`/api/jobs/${job.id}`, token)
+  const finished = await waitForJob({ studioUrl, token, id: job.id })
 
-    if (current.status === 'success') {
-      if (!current.snapshot) throw new Error('Snapshot job succeeded without a snapshot')
-      return current.snapshot
-    }
-    if (current.status === 'failed') throw new Error(current.error ?? 'Snapshot job failed')
+  if (finished.status === 'failed') throw new Error(finished.error ?? 'Snapshot job failed')
+  if (!finished.snapshot) throw new Error('Snapshot job succeeded without a snapshot')
 
-    await new Promise((resolveWait) => setTimeout(resolveWait, 1000))
-  }
-
-  throw new Error('Timed out waiting for the snapshot job')
+  return finished.snapshot
 }
 
 export function snapshotDetails(snapshot: Snapshot, agentId: string): SnapshotDetails {
@@ -91,8 +74,8 @@ export function snapshotDetails(snapshot: Snapshot, agentId: string): SnapshotDe
     id: snapshot.id,
     integrity: snapshot.integrity ?? '',
     expiresAt: snapshot.expiresAt,
-    name: snapshot.packageName ?? snapshot.name ?? `@kubb/snapshot-${agentId}`,
-    version: snapshot.packageVersion ?? snapshot.version ?? '0.0.0',
+    name: snapshot.name ?? `@kubb/snapshot-${agentId}`,
+    version: snapshot.version ?? '0.0.0',
     url: absoluteUrl(snapshot.url),
   }
 }

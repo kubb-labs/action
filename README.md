@@ -1,6 +1,11 @@
 # Kubb GitHub Action
 
-The Kubb GitHub Action generates a package snapshot from CI and publishes it to Kubb Studio. It reuses one CI agent per pull request, updates one pull-request comment, and skips fork pull requests because their secrets are unavailable.
+The Kubb GitHub Action generates a package snapshot from CI and publishes it to Kubb Studio. It
+reuses one CI agent per pull request, updates one pull-request comment, and skips fork pull
+requests because their secrets are unavailable.
+
+It queues the snapshot with Studio's jobs API (`POST /api/jobs`), then polls `GET /api/jobs/{id}`
+until the package is ready. `KUBB_TOKEN` is the organization CI key and goes out as `x-api-key`.
 
 ```yaml
 name: Kubb snapshot
