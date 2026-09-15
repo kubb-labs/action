@@ -119,8 +119,8 @@ importers:
         specifier: ^8.0.0
         version: 8.0.1
       '@kubb/studio':
-        specifier: ^5.2.6
-        version: 5.2.6
+        specifier: ^5.2.7
+        version: 5.2.7
       jiti:
         specifier: ^2.7.0
         version: 2.7.0
@@ -129,8 +129,8 @@ importers:
         specifier: ^3.0.2
         version: 3.0.2
       '@kubb/core':
-        specifier: ^5.2.6
-        version: 5.2.6
+        specifier: ^5.2.7
+        version: 5.2.7
       '@types/node':
         specifier: ^22.20.1
         version: 22.20.2
@@ -270,16 +270,16 @@ packages:
   '@jridgewell/trace-mapping@0.3.31':
     resolution: {integrity: sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw==}
 
-  '@kubb/ast@5.2.6':
-    resolution: {integrity: sha512-tJV1iV7aHPIs4vD+1CHmgspTlOwj4wb4avVm1+vDY+9JIkDxf/wgnDsnDiFBGaNOJP+o2ZARwqNCVKRfk0I9sA==}
+  '@kubb/ast@5.2.7':
+    resolution: {integrity: sha512-/qT37EfIoIyKkYUTc+nN3My2CxI681+35oXh4DZ5POlXJH1xoNvKyN5ZgkMJgrxyGIaBKGetv+h4M/hIPnBJbw==}
     engines: {node: '>=22'}
 
-  '@kubb/core@5.2.6':
-    resolution: {integrity: sha512-D1iblH6HbJqtuam4m4zvZRQ5mJQlyKMYW3pwtR31RHZyE6vbuRKt30GtK4FabJ7H/r54OkDARaZsrnSuSiWnyw==}
+  '@kubb/core@5.2.7':
+    resolution: {integrity: sha512-jjIe+aF8ooMSqcU6GCjr51JiS8tSqskHy/I1w40KFsVpY9sPu1rFch2SM37amhMugLqkJC9D5DhhEO8hj72Gwg==}
     engines: {node: '>=22'}
 
-  '@kubb/studio@5.2.6':
-    resolution: {integrity: sha512-r+0VI5UM+rqU5XP7407I5ixpbJLwzw0Dmv4VqR2G6PUXR7J7Lg8JT2YjWU9uYf2a2QJ9Q5e1PNLthlGkFkC7bQ==}
+  '@kubb/studio@5.2.7':
+    resolution: {integrity: sha512-bG4zROXoEmaEIC2lydOY+3Lw4TaS6Ak6nAG/d3WNY3Mkb85juMdGqiVYdG0t1KrimVioHBNrkTg0XgW1zSL5hA==}
     engines: {node: '>=22'}
 
   '@manypkg/find-root@3.1.0':
@@ -1663,15 +1663,15 @@ snapshots:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.6.0
 
-  '@kubb/ast@5.2.6': {}
+  '@kubb/ast@5.2.7': {}
 
-  '@kubb/core@5.2.6':
+  '@kubb/core@5.2.7':
     dependencies:
-      '@kubb/ast': 5.2.6
+      '@kubb/ast': 5.2.7
 
-  '@kubb/studio@5.2.6':
+  '@kubb/studio@5.2.7':
     dependencies:
-      '@kubb/core': 5.2.6
+      '@kubb/core': 5.2.7
       magicast: 0.5.5
       ofetch: 1.5.1
       remeda: 2.48.0
