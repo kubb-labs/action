@@ -2,19 +2,19 @@ import { context, getOctokit } from '@actions/github'
 import { existsSync, mkdirSync, renameSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { runCommand } from './process.js'
-import { type SnapshotDetails, studioUrl } from './studio.js'
+import type { SnapshotDetails } from './cli.js'
 
 const marker = '<!-- kubb-studio-snapshot -->'
 type Pull = { head: { ref: string; repo?: { full_name?: string } | null } }
 
-export async function updateComment(snapshot: SnapshotDetails, agentSlug: string, token: string): Promise<void> {
+export async function updateComment(snapshot: SnapshotDetails, token: string): Promise<void> {
   if (!token || !context.issue.number) return
   const github = getOctokit(token)
   const { owner, repo } = context.repo
   const commitUrl = `https://github.com/${owner}/${repo}/commit/${context.sha}`
   const body = [
     marker,
-    `### Kubb snapshot — ${snapshot.name}@${snapshot.version}`,
+    `### Kubb snapshot — ${snapshot.name ?? 'unnamed'}@${snapshot.version ?? '0.0.0'}`,
     '',
     'Install this snapshot with npm:',
     '',
@@ -22,7 +22,7 @@ export async function updateComment(snapshot: SnapshotDetails, agentSlug: string
     `npm i ${snapshot.url}`,
     '```',
     '',
-    `[Package](${snapshot.url}) · [Studio agent](${studioUrl}/agents/${agentSlug})`,
+    `[Package](${snapshot.url}) · [Studio agent](${snapshot.agentUrl})`,
     '',
     `<sub>Expires ${snapshot.expiresAt ?? 'soon'} · commit <a href="${commitUrl}"><code>${context.sha.slice(0, 7)}</code></a></sub>`,
   ].join('\n')

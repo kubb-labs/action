@@ -4,8 +4,9 @@ The Kubb GitHub Action generates a package snapshot from CI and publishes it to 
 reuses one CI agent per pull request, updates one pull-request comment, and skips fork pull
 requests because their secrets are unavailable.
 
-It queues the snapshot with Studio's jobs API (`POST /api/jobs`), then polls `GET /api/jobs/{id}`
-until the package is ready. `KUBB_TOKEN` is the organization CI key and goes out as `x-api-key`.
+It runs `kubb studio snapshot`, the same command any CI can run directly (GitLab, Bitbucket,
+Jenkins, and others). This action handles the GitHub-specific parts: opening an init pull request
+when a repository has no `kubb.config.ts` yet, and posting the snapshot as a pull-request comment.
 
 ```yaml
 name: Kubb snapshot
@@ -26,4 +27,13 @@ jobs:
           token: ${{ secrets.KUBB_TOKEN }}
 ```
 
-The repository needs `KUBB_TOKEN` in Actions secrets. Set `KUBB_STUDIO_URL` only for a self-hosted Studio deployment; the default is `https://kubb.studio`.
+The repository needs `KUBB_TOKEN` in Actions secrets: an organization CI API key, sent as
+`x-api-key`. Set `KUBB_STUDIO_URL` only for a self-hosted Studio deployment; the default is
+`https://kubb.studio`.
+
+## Resolving `kubb`
+
+The action runs `kubb studio snapshot` from the repository's own `node_modules/.bin/kubb` when one
+exists, so it uses the same Kubb version the repository's config and plugins are built against.
+When a repository has no local install, it falls back to
+`npx --package @kubb/cli --package @kubb/studio kubb studio snapshot`.
