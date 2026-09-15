@@ -1,5 +1,11 @@
 # @kubb-labs/action
 
+## 0.2.1
+
+### Patch Changes
+
+- c469466: Create snapshots through Studio's async `/api/jobs` API instead of `POST /api/snapshots`.
+
 ## 0.2.0
 
 ### Minor Changes
