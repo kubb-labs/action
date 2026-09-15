@@ -9,14 +9,13 @@ export function runCommand(command: string, args: string[], env = process.env): 
 }
 
 /**
- * Runs a command, mirrors all output to the Actions log, and returns stdout for structured parsing.
+ * Runs a command, routes stderr to the Actions log, and returns stdout for structured parsing.
  */
 export function captureCommand(command: string, args: string[], env = process.env): Promise<string> {
   return new Promise((resolveCommand, reject) => {
     const child = spawn(command, args, { env, stdio: ['ignore', 'pipe', 'pipe'] })
     let stdout = ''
     child.stdout?.on('data', (chunk: Buffer) => {
-      process.stdout.write(chunk)
       stdout += chunk.toString()
     })
     child.stderr?.on('data', (chunk: Buffer) => process.stderr.write(chunk))

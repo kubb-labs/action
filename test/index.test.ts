@@ -12,6 +12,7 @@ vi.mock('@actions/core', () => ({
   }),
   setFailed,
   info: vi.fn(),
+  group: vi.fn(async (_name: string, fn: () => Promise<unknown>) => fn()),
 }))
 
 const payload: { pull_request?: { number: number; head?: { repo?: { fork: boolean } } }; repository?: { id: number } } = {
@@ -84,6 +85,7 @@ describe('run', () => {
     expect(outputs['tarball-url']).toBe(snapshot.url)
     expect(outputs['agent-url']).toBe(snapshot.agentUrl)
     expect(vi.mocked(updateComment)).toHaveBeenCalledWith(snapshot, expect.any(String))
+    expect(vi.mocked(await import('@actions/core')).info).toHaveBeenCalledWith(expect.stringContaining('Snapshot published'))
   })
 
   it('stops before a snapshot when the config still needs an init PR', async () => {
