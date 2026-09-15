@@ -13,6 +13,10 @@ on:
 
 permissions: {}
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   version:
     name: Version packages
@@ -22,6 +26,8 @@ jobs:
       contents: write
       pull-requests: write
       issues: write
+    outputs:
+      release: ${{ steps.release.outputs.release }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -30,7 +36,8 @@ jobs:
         with:
           node-version: '22.22.3'
           cache: 'false'
-      - uses: changesets/action@ae32849d5ba541f9ae29e40e22a623bc13562f51 # v2.1.2
+      - id: changesets
+        uses: changesets/action@ae32849d5ba541f9ae29e40e22a623bc13562f51 # v2.1.2
         with:
           version-script: pnpm run changeset:version
           commit-message: 'ci(changesets): version packages'
@@ -38,12 +45,25 @@ jobs:
           create-github-releases: false
           push-git-tags: false
           github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Check whether this version needs a release
+        id: release
+        env:
+          HAS_CHANGESETS: ${{ steps.changesets.outputs.has-changesets }}
+        run: |
+          if [ "$HAS_CHANGESETS" = 'true' ]; then
+            exit 0
+          fi
+          tag="v$(node -p "require('./package.json').version")"
+          git fetch --tags origin
+          if git rev-parse "$tag" >/dev/null 2>&1; then
+            exit 0
+          fi
+          echo 'release=true' >> "$GITHUB_OUTPUT"
 
   tag:
     name: Build and tag release
-    if: >-
-      github.repository_owner == 'kubb-labs' &&
-      (github.event_name == 'workflow_dispatch' || startsWith(github.event.head_commit.message, 'ci(changesets): version packages'))
+    needs: [version]
+    if: github.repository_owner == 'kubb-labs' && needs.version.outputs.release == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: write
