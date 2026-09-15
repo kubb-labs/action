@@ -38,8 +38,8 @@ export function resolveKubbBinary(workingDirectory: string): { command: string; 
 /**
  * Runs `kubb studio snapshot --json` and returns the parsed snapshot.
  *
- * The CI API key and the Studio URL travel through the child's environment, never argv, so
- * neither lands in a process listing.
+ * The CI API key travels through the child's environment, never argv. The CLI accepts the Studio
+ * URL through its `--url` option.
  */
 export async function runSnapshot({
   workingDirectory,
@@ -53,10 +53,9 @@ export async function runSnapshot({
   id: string
 }): Promise<SnapshotDetails> {
   const { command, args } = resolveKubbBinary(workingDirectory)
-  const stdout = await captureCommand(command, [...args, 'studio', 'snapshot', '--json', '--config', config, '--id', id], {
+  const stdout = await captureCommand(command, [...args, 'studio', 'snapshot', '--json', '--config', config, '--id', id, '--url', studioUrl], {
     ...process.env,
     KUBB_TOKEN: token,
-    KUBB_STUDIO_URL: studioUrl,
   })
 
   return JSON.parse(stdout.trim()) as SnapshotDetails

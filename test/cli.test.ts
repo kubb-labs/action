@@ -64,7 +64,7 @@ describe('runSnapshot', () => {
     expect(snapshot).toMatchObject({ id: 'snap-1', name: '@kubb/demo' })
     const [command, args, env] = vi.mocked(captureCommand).mock.calls[0]!
     expect(command).toBe(path.join(project, 'node_modules', '.bin', 'kubb'))
-    expect(args).toEqual(['studio', 'snapshot', '--json', '--config', '/repo/kubb.config.ts', '--id', 'gh:123:42'])
+    expect(args).toEqual(['studio', 'snapshot', '--json', '--config', '/repo/kubb.config.ts', '--id', 'gh:123:42', '--url', 'https://kubb.studio'])
     expect(env?.KUBB_TOKEN).toBe('ci-token')
   })
 })
