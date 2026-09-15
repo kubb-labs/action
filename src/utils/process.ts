@@ -9,15 +9,14 @@ export function runCommand(command: string, args: string[], env = process.env): 
 }
 
 /**
- * Runs a command and returns its stdout, so a caller can parse structured output. `stderr` stays
- * on `inherit`, so the child's progress output still reaches the Actions log while stdout stays
- * clean for whatever the caller parses.
+ * Runs a command, mirrors all output to the Actions log, and returns stdout for structured parsing.
  */
 export function captureCommand(command: string, args: string[], env = process.env): Promise<string> {
   return new Promise((resolveCommand, reject) => {
     const child = spawn(command, args, { env, stdio: ['ignore', 'pipe', 'inherit'] })
     let stdout = ''
     child.stdout?.on('data', (chunk: Buffer) => {
+      process.stdout.write(chunk)
       stdout += chunk.toString()
     })
     child.once('error', reject)

@@ -53,6 +53,7 @@ export async function runSnapshot({
   id: string
 }): Promise<SnapshotDetails> {
   const { command, args } = resolveKubbBinary(workingDirectory)
+  console.info(`Kubb Studio snapshot: binary=${command}, url=${studioUrl}, id=${id}`)
   const stdout = await captureCommand(command, [...args, 'studio', 'snapshot', '--json', '--config', config, '--id', id, '--url', studioUrl], {
     ...process.env,
     KUBB_TOKEN: token,

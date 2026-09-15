@@ -46,6 +46,7 @@ describe('resolveKubbBinary', () => {
 describe('runSnapshot', () => {
   it('runs kubb studio snapshot with --json and parses the result', async () => {
     const project = makeProject(true)
+    const info = vi.spyOn(console, 'info').mockImplementation(() => {})
     vi.mocked(captureCommand).mockResolvedValue(
       `${JSON.stringify({
         id: 'snap-1',
@@ -66,5 +67,6 @@ describe('runSnapshot', () => {
     expect(command).toBe(path.join(project, 'node_modules', '.bin', 'kubb'))
     expect(args).toEqual(['studio', 'snapshot', '--json', '--config', '/repo/kubb.config.ts', '--id', 'gh:123:42', '--url', 'https://kubb.studio'])
     expect(env?.KUBB_TOKEN).toBe('ci-token')
+    expect(info).toHaveBeenCalledWith(`Kubb Studio snapshot: binary=${command}, url=https://kubb.studio, id=gh:123:42`)
   })
 })
