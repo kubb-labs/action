@@ -59,5 +59,7 @@ export async function runSnapshot({
     KUBB_TOKEN: token,
   })
 
-  return JSON.parse(stdout.trim()) as SnapshotDetails
+  const json = stdout.trim().split(/\r?\n/).find((line) => line.startsWith('{'))
+
+  return JSON.parse(json ?? stdout.trim()) as SnapshotDetails
 }

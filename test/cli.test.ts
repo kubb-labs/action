@@ -57,7 +57,7 @@ describe('runSnapshot', () => {
         snapshotIdUrl: 'https://kubb.studio/packages/snap-1/snapshot.tgz',
         expiresAt: '2026-01-08T00:00:00.000Z',
         agentUrl: 'https://kubb.studio/agents/brave-otter',
-      })}\n`,
+      })}\n[four-walls-vanish] Disconnected from Studio\n`,
     )
 
     const snapshot = await runSnapshot({ workingDirectory: project, config: '/repo/kubb.config.ts', token: 'ci-token', id: 'gh:123:42' })
