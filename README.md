@@ -62,8 +62,8 @@ jobs:
           npm-token: ${{ secrets.NPM_TOKEN }}
 ```
 
-To publish a snapshot created by an earlier job, pass its `snapshot-id` input. `registry` defaults
-to `https://registry.npmjs.org` and can be changed for a compatible npm registry.
+To publish a snapshot created by an earlier job, pass its `snapshot-id` input. Set
+`NPM_CONFIG_REGISTRY` to publish to a compatible npm registry other than npmjs.org.
 
 ## Resolving `kubb`
 

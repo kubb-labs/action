@@ -30,10 +30,6 @@ inputs:
   npm-token:
     description: npm access token used when publishing
     required: false
-  registry:
-    description: npm registry to publish to
-    default: https://registry.npmjs.org
-    required: false
 outputs:
   snapshot-id:
     description: ID of the generated snapshot

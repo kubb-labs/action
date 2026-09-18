@@ -21,7 +21,7 @@ export async function run(): Promise<void> {
   const apiKey = core.getInput('token', { required: true })
   core.setSecret(apiKey)
   const githubToken = core.getInput('github-token') || process.env.GITHUB_TOKEN || ''
-  let registry = (core.getInput('registry') || 'https://registry.npmjs.org').replace(/\/$/, '')
+  let registry = (process.env.NPM_CONFIG_REGISTRY || 'https://registry.npmjs.org').replace(/\/$/, '')
   const shouldPublish = core.getBooleanInput('publish')
   const requestedSnapshotId = core.getInput('snapshot-id')
   if (await initConfig(githubToken, config)) {
