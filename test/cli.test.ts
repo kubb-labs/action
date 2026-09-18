@@ -74,11 +74,25 @@ describe('runSnapshot', () => {
 describe('runPublish', () => {
   it('runs kubb studio publish with both tokens in the child environment', async () => {
     vi.mocked(captureCommand).mockResolvedValue(
-      JSON.stringify({ jobId: 'job-1', snapshotId: 'snap-1', name: '@kubb/demo', version: '1.0.0', registry: 'https://registry.npmjs.org', agentUrl: 'https://kubb.studio/agents/demo' }),
+      JSON.stringify({
+        jobId: 'job-1',
+        snapshotId: 'snap-1',
+        name: '@kubb/demo',
+        version: '1.0.0',
+        registry: 'https://registry.npmjs.org',
+        agentUrl: 'https://kubb.studio/agents/demo',
+      }),
     )
 
     const project = makeProject(true)
-    const result = await runPublish({ workingDirectory: project, token: 'ci-token', id: 'gh:123:42', snapshotId: 'snap-1', npmToken: 'npm-token', registry: 'https://registry.npmjs.org' })
+    const result = await runPublish({
+      workingDirectory: project,
+      token: 'ci-token',
+      id: 'gh:123:42',
+      snapshotId: 'snap-1',
+      npmToken: 'npm-token',
+      registry: 'https://registry.npmjs.org',
+    })
 
     expect(result.snapshotId).toBe('snap-1')
     const [command, args, env] = vi.mocked(captureCommand).mock.calls[0]!

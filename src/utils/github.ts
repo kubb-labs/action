@@ -7,11 +7,7 @@ import type { SnapshotDetails } from './cli.js'
 const marker = '<!-- kubb-studio-snapshot -->'
 type Pull = { head: { ref: string; repo?: { full_name?: string } | null } }
 
-export async function updateComment(
-  snapshot: SnapshotDetails,
-  token: string,
-  options: { published?: boolean; registry?: string } = {},
-): Promise<void> {
+export async function updateComment(snapshot: SnapshotDetails, token: string, options: { published?: boolean; registry?: string } = {}): Promise<void> {
   if (!token || !context.issue.number) return
   const github = getOctokit(token)
   const { owner, repo } = context.repo

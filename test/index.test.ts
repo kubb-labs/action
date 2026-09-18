@@ -52,7 +52,16 @@ const snapshot = {
 
 vi.mock('../src/utils/cli.js', () => ({
   runSnapshot: vi.fn().mockResolvedValue(snapshot),
-  runPublish: vi.fn().mockResolvedValue({ jobId: 'job-1', snapshotId: 'snap-1', name: '@kubb/demo', version: '1.0.0', registry: 'https://registry.npmjs.org', agentUrl: 'https://kubb.studio/agents/brave-otter' }),
+  runPublish: vi
+    .fn()
+    .mockResolvedValue({
+      jobId: 'job-1',
+      snapshotId: 'snap-1',
+      name: '@kubb/demo',
+      version: '1.0.0',
+      registry: 'https://registry.npmjs.org',
+      agentUrl: 'https://kubb.studio/agents/brave-otter',
+    }),
   studioUrl: 'https://kubb.studio',
 }))
 

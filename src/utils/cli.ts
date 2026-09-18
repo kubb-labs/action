@@ -66,7 +66,10 @@ export async function runPublish({
     NPM_TOKEN: npmToken,
     ...(registry ? { NPM_CONFIG_REGISTRY: registry } : {}),
   })
-  const json = stdout.trim().split(/\r?\n/).find((line) => line.startsWith('{'))
+  const json = stdout
+    .trim()
+    .split(/\r?\n/)
+    .find((line) => line.startsWith('{'))
 
   return JSON.parse(json ?? stdout.trim()) as PublishDetails
 }
@@ -95,7 +98,10 @@ export async function runSnapshot({
     KUBB_TOKEN: token,
   })
 
-  const json = stdout.trim().split(/\r?\n/).find((line) => line.startsWith('{'))
+  const json = stdout
+    .trim()
+    .split(/\r?\n/)
+    .find((line) => line.startsWith('{'))
 
   return JSON.parse(json ?? stdout.trim()) as SnapshotDetails
 }
