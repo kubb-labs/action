@@ -20,6 +20,20 @@ inputs:
     description: Path to the Kubb config file, relative to working-directory
     default: kubb.config.ts
     required: false
+  publish:
+    description: Publish the generated snapshot to npm
+    default: 'false'
+    required: false
+  snapshot-id:
+    description: Existing Kubb Studio snapshot ID to publish instead of generating a snapshot
+    required: false
+  npm-token:
+    description: npm access token used when publishing
+    required: false
+  registry:
+    description: npm registry to publish to
+    default: https://registry.npmjs.org
+    required: false
 outputs:
   snapshot-id:
     description: ID of the generated snapshot
@@ -33,6 +47,10 @@ outputs:
     description: SHA-512 integrity of the generated tarball
   agent-url:
     description: Kubb Studio agent URL
+  registry:
+    description: npm registry used for publishing
+  published:
+    description: Whether the snapshot was published to npm
 runs:
   using: node24
   main: dist/index.js

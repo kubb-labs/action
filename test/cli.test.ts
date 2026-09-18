@@ -3,10 +3,10 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-vi.mock('../src/utils/process.js', () => ({ captureCommand: vi.fn() }))
+vi.mock('../src/utils/process.js', () => ({ captureCommand: vi.fn(), runCommand: vi.fn() }))
 
 const { captureCommand } = await import('../src/utils/process.js')
-const { resolveKubbBinary, runSnapshot } = await import('../src/utils/cli.js')
+const { resolveKubbBinary, runPublish, runSnapshot } = await import('../src/utils/cli.js')
 
 const tempDirs: Array<string> = []
 
@@ -68,5 +68,22 @@ describe('runSnapshot', () => {
     expect(args).toEqual(['studio', 'snapshot', '--json', '--config', '/repo/kubb.config.ts', '--id', 'gh:123:42', '--url', 'https://kubb.studio'])
     expect(env?.KUBB_TOKEN).toBe('ci-token')
     expect(info).toHaveBeenCalledWith(`Kubb Studio snapshot: binary=${command}, url=https://kubb.studio, id=gh:123:42`)
+  })
+})
+
+describe('runPublish', () => {
+  it('runs kubb studio publish with both tokens in the child environment', async () => {
+    vi.mocked(captureCommand).mockResolvedValue(
+      JSON.stringify({ jobId: 'job-1', snapshotId: 'snap-1', name: '@kubb/demo', version: '1.0.0', registry: 'https://registry.npmjs.org', agentUrl: 'https://kubb.studio/agents/demo' }),
+    )
+
+    const project = makeProject(true)
+    const result = await runPublish({ workingDirectory: project, token: 'ci-token', id: 'gh:123:42', snapshotId: 'snap-1', npmToken: 'npm-token', registry: 'https://registry.npmjs.org' })
+
+    expect(result.snapshotId).toBe('snap-1')
+    const [command, args, env] = vi.mocked(captureCommand).mock.calls[0]!
+    expect(command).toBe(path.join(project, 'node_modules', '.bin', 'kubb'))
+    expect(args).toEqual(['studio', 'publish', '--json', '--snapshot-id', 'snap-1', '--id', 'gh:123:42', '--url', 'https://kubb.studio'])
+    expect(env).toMatchObject({ KUBB_TOKEN: 'ci-token', NPM_TOKEN: 'npm-token', NPM_CONFIG_REGISTRY: 'https://registry.npmjs.org' })
   })
 })

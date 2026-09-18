@@ -31,6 +31,40 @@ The repository needs `KUBB_TOKEN` in Actions secrets: an organization CI API key
 `x-api-key`. Set `KUBB_STUDIO_URL` only for a self-hosted Studio deployment; the default is
 `https://kubb.studio`.
 
+## Publishing a snapshot to npm
+
+Set `publish: true` and provide an npm token. The action publishes the generated Studio snapshot
+tarball and exposes `published` and `registry` outputs:
+
+```yaml
+name: Release generated package
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+      - uses: kubb-labs/action@v1
+        with:
+          token: ${{ secrets.KUBB_TOKEN }}
+          publish: true
+          npm-token: ${{ secrets.NPM_TOKEN }}
+```
+
+To publish a snapshot created by an earlier job, pass its `snapshot-id` input. `registry` defaults
+to `https://registry.npmjs.org` and can be changed for a compatible npm registry.
+
 ## Resolving `kubb`
 
 The action runs `kubb studio snapshot` from the repository's own `node_modules/.bin/kubb` when one

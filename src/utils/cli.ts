@@ -18,6 +18,15 @@ export type SnapshotDetails = {
   agentUrl: string
 }
 
+export type PublishDetails = {
+  jobId: string
+  snapshotId: string
+  name: string
+  version: string
+  registry: string
+  agentUrl: string
+}
+
 /**
  * Where to run `kubb` from: the target repository's own install when it has one, since that is
  * the Kubb version its config and plugins are built against. Falls back to `npx`, so a repository
@@ -33,6 +42,33 @@ export function resolveKubbBinary(workingDirectory: string): { command: string; 
   }
 
   return { command: 'npx', args: ['--yes', '--package', '@kubb/cli', '--package', '@kubb/studio', 'kubb'] }
+}
+
+export async function runPublish({
+  workingDirectory,
+  token,
+  id,
+  snapshotId,
+  npmToken,
+  registry,
+}: {
+  workingDirectory: string
+  token: string
+  id: string
+  snapshotId: string
+  npmToken: string
+  registry?: string
+}): Promise<PublishDetails> {
+  const { command, args } = resolveKubbBinary(workingDirectory)
+  const stdout = await captureCommand(command, [...args, 'studio', 'publish', '--json', '--snapshot-id', snapshotId, '--id', id, '--url', studioUrl], {
+    ...process.env,
+    KUBB_TOKEN: token,
+    NPM_TOKEN: npmToken,
+    ...(registry ? { NPM_CONFIG_REGISTRY: registry } : {}),
+  })
+  const json = stdout.trim().split(/\r?\n/).find((line) => line.startsWith('{'))
+
+  return JSON.parse(json ?? stdout.trim()) as PublishDetails
 }
 
 /**
