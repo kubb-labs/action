@@ -34,13 +34,15 @@ export async function run(): Promise<void> {
 
   const snapshot = await core.group('Kubb Studio snapshot', () => runSnapshot({ workingDirectory: process.cwd(), config, token: apiKey, id }))
 
-  core.info([
-    'Snapshot published',
-    `  Package: ${snapshot.name ?? '(unnamed)'}@${snapshot.version ?? '0.0.0'}`,
-    `  Tarball: ${snapshot.url}`,
-    `  Agent: ${snapshot.agentUrl}`,
-    `  Expires: ${snapshot.expiresAt}`,
-  ].join('\n'))
+  core.info(
+    [
+      'Snapshot published',
+      `  Package: ${snapshot.name ?? '(unnamed)'}@${snapshot.version ?? '0.0.0'}`,
+      `  Tarball: ${snapshot.url}`,
+      `  Agent: ${snapshot.agentUrl}`,
+      `  Expires: ${snapshot.expiresAt}`,
+    ].join('\n'),
+  )
 
   core.setOutput('snapshot-id', snapshot.id)
   core.setOutput('package-name', snapshot.name)
