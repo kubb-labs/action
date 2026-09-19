@@ -31,6 +31,8 @@ The repository needs `KUBB_TOKEN` in Actions secrets: an organization CI API key
 `x-api-key`. Set `KUBB_STUDIO_URL` only for a self-hosted Studio deployment; the default is
 `https://kubb.studio`.
 
+The pull-request comment links to the generated package and its Studio agent. Reviewers can install and inspect the result without recreating the workflow locally. See the [Kubb Studio guide](https://kubb.dev/docs/5.x/guide/integrations/studio), the [GitHub Actions guide](https://kubb.dev/docs/5.x/guide/integrations/github-actions), and the [local-first model](https://kubb.dev/docs/5.x/guide/concepts/local-first).
+
 ## Resolving `kubb`
 
 The action runs `kubb studio snapshot` from the repository's own `node_modules/.bin/kubb` when one
