@@ -33,6 +33,12 @@ outputs:
     description: SHA-512 integrity of the generated tarball
   agent-url:
     description: Kubb Studio agent URL
+  files-added:
+    description: Number of generated files added since the previous snapshot on this pull request
+  files-changed:
+    description: Number of generated files changed since the previous snapshot on this pull request
+  files-removed:
+    description: Number of generated files removed since the previous snapshot on this pull request
 runs:
   using: node24
   main: dist/index.js

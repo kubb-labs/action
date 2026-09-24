@@ -5,6 +5,17 @@ import { captureCommand } from './process.js'
 export const studioUrl = (process.env.KUBB_STUDIO_URL ?? 'https://kubb.studio').replace(/\/$/, '')
 
 /**
+ * How the snapshot's generated files differ from the previous snapshot of the same package on the
+ * same agent. `base` is `null` on a first snapshot.
+ */
+export type SnapshotChanges = {
+  base: { id: string; version: string | null; commit?: string; createdAt: string } | null
+  added: Array<string>
+  changed: Array<string>
+  removed: Array<string>
+}
+
+/**
  * Package view `kubb studio snapshot --json` prints, absolute and ready to use.
  */
 export type SnapshotDetails = {
@@ -16,6 +27,10 @@ export type SnapshotDetails = {
   snapshotIdUrl: string
   expiresAt: string
   agentUrl: string
+  /**
+   * Absent when the CLI or Studio predates it.
+   */
+  changes?: SnapshotChanges
 }
 
 /**
@@ -39,22 +54,13 @@ export function resolveKubbBinary(workingDirectory: string): { command: string; 
  * Runs `kubb studio snapshot --json` and returns the parsed snapshot.
  *
  * The CI API key travels through the child's environment, never argv. The CLI accepts the Studio
- * URL through its `--url` option.
+ * URL through its `--url` option, and detects the CI agent identity from the environment on its
+ * own, the same way it does for every CI provider it supports.
  */
-export async function runSnapshot({
-  workingDirectory,
-  config,
-  token,
-  id,
-}: {
-  workingDirectory: string
-  config: string
-  token: string
-  id: string
-}): Promise<SnapshotDetails> {
+export async function runSnapshot({ workingDirectory, config, token }: { workingDirectory: string; config: string; token: string }): Promise<SnapshotDetails> {
   const { command, args } = resolveKubbBinary(workingDirectory)
-  console.info(`Kubb Studio snapshot: binary=${command}, url=${studioUrl}, id=${id}`)
-  const stdout = await captureCommand(command, [...args, 'studio', 'snapshot', '--json', '--config', config, '--id', id, '--url', studioUrl], {
+  console.info(`Kubb Studio snapshot: binary=${command}, url=${studioUrl}`)
+  const stdout = await captureCommand(command, [...args, 'studio', 'snapshot', '--json', '--config', config, '--url', studioUrl], {
     ...process.env,
     KUBB_TOKEN: token,
   })

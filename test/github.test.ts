@@ -10,23 +10,37 @@ vi.mock('node:fs', () => ({ existsSync, mkdirSync, renameSync }))
 
 const listPulls = vi.fn().mockResolvedValue([])
 const createPull = vi.fn().mockResolvedValue(undefined)
-const paginate = vi.fn((_fn: unknown, options: unknown) => listPulls(options))
-const getOctokit = vi.fn(() => ({ rest: { pulls: { list: listPulls, create: createPull } }, paginate }))
+const listComments = vi.fn().mockResolvedValue([])
+const updateIssueComment = vi.fn().mockResolvedValue(undefined)
+const createIssueComment = vi.fn().mockResolvedValue(undefined)
+const paginate = vi.fn((fn: unknown, options: unknown) => (fn === listComments ? listComments(options) : listPulls(options)))
+const getOctokit = vi.fn(() => ({
+  rest: { pulls: { list: listPulls, create: createPull }, issues: { listComments, updateComment: updateIssueComment, createComment: createIssueComment } },
+  paginate,
+}))
+
+let issueNumber: number | undefined = 42
 
 vi.mock('@actions/github', () => ({
   context: {
     repo: { owner: 'kubb-labs', repo: 'action' },
     payload: { repository: { default_branch: 'main' } },
+    get issue() {
+      return { owner: 'kubb-labs', repo: 'action', number: issueNumber }
+    },
+    sha: '9f3e2a1bbccdd00112233445566778899aabbcc',
   },
   getOctokit,
 }))
 
-const { initConfig } = await import('../src/utils/github.js')
+const { initConfig, updateComment } = await import('../src/utils/github.js')
 
 beforeEach(() => {
   vi.clearAllMocks()
+  issueNumber = 42
   listPulls.mockResolvedValue([])
-  paginate.mockImplementation((_fn: unknown, options: unknown) => listPulls(options))
+  listComments.mockResolvedValue([])
+  paginate.mockImplementation((fn: unknown, options: unknown) => (fn === listComments ? listComments(options) : listPulls(options)))
 })
 
 afterEach(() => {
@@ -59,4 +73,105 @@ test('skips creating another pull request when one is already open', async () =>
 
   expect(runCommand).not.toHaveBeenCalled()
   expect(createPull).not.toHaveBeenCalled()
+})
+
+const snapshot = {
+  id: 'snap-1',
+  name: '@acme/api',
+  version: '1.0.0',
+  integrity: 'sha512-abc',
+  url: 'https://kubb.studio/packages/brave-otter/%40acme%2Fapi.tgz',
+  snapshotIdUrl: 'https://kubb.studio/packages/snap-1/snapshot.tgz',
+  expiresAt: '2026-01-08T00:00:00.000Z',
+  agentUrl: 'https://kubb.studio/agents/brave-otter',
+}
+
+test('does nothing off a pull request, where there is no comment to update', async () => {
+  issueNumber = undefined
+
+  await updateComment(snapshot, 'gh-token')
+
+  expect(createIssueComment).not.toHaveBeenCalled()
+})
+
+test('creates the comment on the first snapshot, with no changes block', async () => {
+  await updateComment(snapshot, 'gh-token')
+
+  expect(createIssueComment).toHaveBeenCalledOnce()
+  const body = createIssueComment.mock.calls[0]![0].body as string
+  expect(body).toContain('npm i https://kubb.studio/packages/brave-otter/%40acme%2Fapi.tgz')
+  expect(body).not.toContain('Changes since')
+  expect(body).not.toContain('First snapshot')
+})
+
+test('reports a first snapshot when Studio sent changes with no base', async () => {
+  await updateComment({ ...snapshot, changes: { base: null, added: ['pet.ts', 'user.ts'], changed: [], removed: [] } }, 'gh-token')
+
+  const body = createIssueComment.mock.calls[0]![0].body as string
+  expect(body).toContain('**First snapshot for this pull request**: 2 files generated')
+  expect(body).not.toContain('<details>')
+})
+
+test('summarizes and lists changes against the previous snapshot, linking its commit', async () => {
+  await updateComment(
+    {
+      ...snapshot,
+      changes: {
+        base: { id: 'snap-0', version: '1.0.0', commit: '9f3e2a1bbccdd00112233445566778899aabbcc', createdAt: '2026-01-01T00:00:00.000Z' },
+        added: ['models/PetStatus.ts'],
+        changed: ['clients/updatePet.ts'],
+        removed: ['models/LegacyPetStatus.ts'],
+      },
+    },
+    'gh-token',
+  )
+
+  const body = createIssueComment.mock.calls[0]![0].body as string
+  expect(body).toContain(
+    '**Changes since [`9f3e2a1`](https://github.com/kubb-labs/action/commit/9f3e2a1bbccdd00112233445566778899aabbcc)**: 1 added · 1 changed · 1 removed',
+  )
+  expect(body).toContain('| Added | `models/PetStatus.ts` |')
+  expect(body).toContain('| Changed | `clients/updatePet.ts` |')
+  expect(body).toContain('| Removed | `models/LegacyPetStatus.ts` |')
+  expect(body).toContain('<summary>3 generated files changed</summary>')
+})
+
+test('reports no changes without a file list when nothing changed', async () => {
+  await updateComment(
+    {
+      ...snapshot,
+      changes: { base: { id: 'snap-0', version: '1.0.0', createdAt: '2026-01-01T00:00:00.000Z' }, added: [], changed: [], removed: [] },
+    },
+    'gh-token',
+  )
+
+  const body = createIssueComment.mock.calls[0]![0].body as string
+  expect(body).toContain('**No changes since 2026-01-01T00:00:00.000Z**')
+  expect(body).not.toContain('<details>')
+})
+
+test('caps the listed files and says how many more, past the GitHub comment size limit', async () => {
+  const added = Array.from({ length: 62 }, (_, index) => `file-${index}.ts`)
+
+  await updateComment(
+    {
+      ...snapshot,
+      changes: { base: { id: 'snap-0', version: '1.0.0', createdAt: '2026-01-01T00:00:00.000Z' }, added, changed: [], removed: [] },
+    },
+    'gh-token',
+  )
+
+  const body = createIssueComment.mock.calls[0]![0].body as string
+  expect(body).toContain('file-49.ts')
+  expect(body).not.toContain('file-50.ts')
+  expect(body).toContain('…and 12 more files. Install the package to see everything.')
+})
+
+test('updates the existing comment instead of creating a second one', async () => {
+  listComments.mockResolvedValue([{ id: 7, body: '<!-- kubb-studio-snapshot -->\nold' }])
+
+  await updateComment(snapshot, 'gh-token')
+
+  expect(updateIssueComment).toHaveBeenCalledWith(expect.objectContaining({ comment_id: 7 }))
+  expect(createIssueComment).not.toHaveBeenCalled()
 })
