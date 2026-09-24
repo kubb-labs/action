@@ -73,10 +73,11 @@ describe('run', () => {
     expect(runSnapshot).not.toHaveBeenCalled()
   })
 
-  it('reproduces the id this action has always registered agents under', async () => {
+  it('lets the CLI detect the CI agent identity, instead of passing an id itself', async () => {
     await run()
 
-    expect(vi.mocked(runSnapshot)).toHaveBeenCalledWith(expect.objectContaining({ id: 'gh:123456:42', token: 'ci-token' }))
+    expect(vi.mocked(runSnapshot)).toHaveBeenCalledWith(expect.objectContaining({ token: 'ci-token' }))
+    expect(vi.mocked(runSnapshot).mock.calls[0]?.[0]).not.toHaveProperty('id')
   })
 
   it('maps the snapshot onto the action outputs and updates the comment', async () => {
@@ -84,8 +85,29 @@ describe('run', () => {
 
     expect(outputs['tarball-url']).toBe(snapshot.url)
     expect(outputs['agent-url']).toBe(snapshot.agentUrl)
+    expect(outputs['files-added']).toBe('0')
+    expect(outputs['files-changed']).toBe('0')
+    expect(outputs['files-removed']).toBe('0')
     expect(vi.mocked(updateComment)).toHaveBeenCalledWith(snapshot, expect.any(String))
     expect(vi.mocked(await import('@actions/core')).info).toHaveBeenCalledWith(expect.stringContaining('Snapshot published'))
+  })
+
+  it('counts each kind of change into its own output', async () => {
+    vi.mocked(runSnapshot).mockResolvedValueOnce({
+      ...snapshot,
+      changes: {
+        base: { id: 'snap-0', version: '1.0.0', commit: '9f3e2a1', createdAt: '2026-01-01T00:00:00.000Z' },
+        added: ['a.ts', 'b.ts'],
+        changed: ['c.ts'],
+        removed: [],
+      },
+    })
+
+    await run()
+
+    expect(outputs['files-added']).toBe('2')
+    expect(outputs['files-changed']).toBe('1')
+    expect(outputs['files-removed']).toBe('0')
   })
 
   it('stops before a snapshot when the config still needs an init PR', async () => {

@@ -26,13 +26,7 @@ export async function run(): Promise<void> {
     return
   }
 
-  // Reproduces the identity this action has always registered CI agents under, so a repository
-  // that already has one open keeps reusing it here instead of registering a new one.
-  const repositoryId = String(context.payload.repository?.id ?? context.repo.repo)
-  const pullRequestId = String(context.payload.pull_request?.number ?? context.runId)
-  const id = `gh:${repositoryId}:${pullRequestId}`
-
-  const snapshot = await core.group('Kubb Studio snapshot', () => runSnapshot({ workingDirectory: process.cwd(), config, token: apiKey, id }))
+  const snapshot = await core.group('Kubb Studio snapshot', () => runSnapshot({ workingDirectory: process.cwd(), config, token: apiKey }))
 
   core.info(
     [
@@ -50,6 +44,9 @@ export async function run(): Promise<void> {
   core.setOutput('tarball-url', snapshot.url)
   core.setOutput('integrity', snapshot.integrity)
   core.setOutput('agent-url', snapshot.agentUrl)
+  core.setOutput('files-added', String(snapshot.changes?.added.length ?? 0))
+  core.setOutput('files-changed', String(snapshot.changes?.changed.length ?? 0))
+  core.setOutput('files-removed', String(snapshot.changes?.removed.length ?? 0))
   await updateComment(snapshot, githubToken)
 }
 
