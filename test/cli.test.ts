@@ -39,7 +39,10 @@ describe('resolveKubbBinary', () => {
   it('falls back to npx with both @kubb/cli and @kubb/studio when the project has no local kubb', () => {
     const project = makeProject(false)
 
-    expect(resolveKubbBinary(project)).toEqual({ command: 'npx', args: ['--yes', '--package', '@kubb/cli@^5.3.16', '--package', '@kubb/studio@^5.3.16', 'kubb'] })
+    expect(resolveKubbBinary(project)).toEqual({
+      command: 'npx',
+      args: ['--yes', '--package', '@kubb/cli@^5.3.16', '--package', '@kubb/studio@^5.3.16', 'kubb'],
+    })
   })
 })
 
