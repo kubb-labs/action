@@ -26,9 +26,8 @@ export async function run(): Promise<void> {
     return
   }
 
-  const compareCommitted = core.getInput('compare-committed') === 'true'
   const snapshot = await core
-    .group('Kubb Studio snapshot', () => runSnapshot({ workingDirectory: process.cwd(), config, token: apiKey, compareCommitted }))
+    .group('Kubb Studio snapshot', () => runSnapshot({ workingDirectory: process.cwd(), config, token: apiKey }))
     .catch(async (error: unknown) => {
       const message = (error instanceof Error ? error.message : String(error)).replaceAll(apiKey, '***')
       // Best effort: a failed comment must not hide the snapshot failure itself.

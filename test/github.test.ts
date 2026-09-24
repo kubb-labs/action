@@ -217,16 +217,6 @@ test('says how to get a base branch snapshot when there is none yet', async () =
   expect(commentBody()).toContain('**No snapshot of `main` to compare with yet.** Run this workflow on pushes to `main` to compare pull requests with it.')
 })
 
-test('compares with the committed generated files when asked', async () => {
-  await updateComment({ ...snapshot, diskChanges: { added: [], changed: ['src/gen/models/Pet.ts'], removed: [] } }, 'gh-token')
-  expect(commentBody()).toContain('**Differs from the committed generated files**: 0 added · 1 changed · 0 removed')
-  expect(commentBody()).toContain('| Changed | `src/gen/models/Pet.ts` |')
-
-  createIssueComment.mockClear()
-  await updateComment({ ...snapshot, diskChanges: { added: [], changed: [], removed: [] } }, 'gh-token')
-  expect(commentBody()).toContain('**Matches the committed generated files**')
-})
-
 test("links the pull request's head commit, not the merge commit the run checks out", async () => {
   payload.pull_request = { head: { sha: 'feedface00112233445566778899aabbccddeeff' } }
 

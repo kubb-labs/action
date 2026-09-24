@@ -74,18 +74,6 @@ describe('runSnapshot', () => {
     expect(info).toHaveBeenCalledWith(`Kubb Studio snapshot: binary=${command}, url=https://kubb.studio`)
   })
 
-  it('lets the agent read the output directory only when asked to compare the committed files', async () => {
-    const project = makeProject(true)
-    vi.spyOn(console, 'info').mockImplementation(() => {})
-    vi.mocked(captureCommand).mockResolvedValue('{"id":"snap-1"}')
-
-    await runSnapshot({ workingDirectory: project, config: 'kubb.config.ts', token: 'ci-token', compareCommitted: true })
-    await runSnapshot({ workingDirectory: project, config: 'kubb.config.ts', token: 'ci-token' })
-
-    expect(vi.mocked(captureCommand).mock.calls[0]?.[1]).toContain('--allow-read')
-    expect(vi.mocked(captureCommand).mock.calls[1]?.[1]).not.toContain('--allow-read')
-  })
-
   it('passes the changes the CLI reports through untouched', async () => {
     const project = makeProject(true)
     vi.spyOn(console, 'info').mockImplementation(() => {})
