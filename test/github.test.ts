@@ -237,22 +237,14 @@ test("links the pull request's head commit, not the merge commit the run checks 
   )
 })
 
-test('replaces the comment with the failure, redacting secrets and linking the run', async () => {
+test('replaces the comment with the failure and a link to the run', async () => {
   listComments.mockResolvedValue([{ id: 7, body: '<!-- kubb-studio-snapshot -->\nold' }])
 
-  await updateFailureComment({ message: 'Snapshot job failed: key ci-secret rejected', token: 'gh-token', secrets: ['ci-secret'] })
+  await updateFailureComment('Snapshot job failed: offline', 'gh-token')
 
   const body = (updateIssueComment.mock.calls[0]![0] as { body: string }).body
   expect(body).toContain('### Kubb snapshot failed')
-  expect(body).toContain('Snapshot job failed: key *** rejected')
-  expect(body).not.toContain('ci-secret')
+  expect(body).toContain('Snapshot job failed: offline')
   expect(body).toContain('https://github.com/kubb-labs/action/actions/runs/321')
   expect(body).not.toContain('npm i')
-})
-
-test('keeps only the end of a long failure', async () => {
-  await updateFailureComment({ message: `${'x'.repeat(3_000)}the actual error`, token: 'gh-token' })
-
-  expect(commentBody()).toContain('the actual error')
-  expect(commentBody()).not.toContain('x'.repeat(2_100))
 })

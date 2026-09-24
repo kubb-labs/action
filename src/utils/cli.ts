@@ -14,8 +14,7 @@ export type FileChanges = {
 }
 
 /**
- * How the snapshot's generated files differ from an earlier snapshot of the same package. `base` is
- * `null` when there is none to compare with.
+ * How generated files differ from an earlier snapshot. `base` is `null` when there is none.
  */
 export type SnapshotChanges = FileChanges & {
   base: { id: string; version: string | null; commit?: string; createdAt: string } | null
@@ -34,17 +33,12 @@ export type SnapshotDetails = {
   expiresAt: string
   agentUrl: string
   /**
-   * Since the previous snapshot on this pull request. Absent when the CLI or Studio predates it.
+   * Absent when the CLI or Studio predates it, like the two below.
    */
   changes?: SnapshotChanges
-  /**
-   * Against the latest snapshot of the pull request's base branch, named by `branch`. Absent off a
-   * pull request, or when the CLI or Studio predates it.
-   */
+  /** Against the pull request's base branch. */
   branchChanges?: SnapshotChanges & { branch: string }
-  /**
-   * Against the generated files checked out with the repository. Only with `compare-committed`.
-   */
+  /** Against the checked-out generated files, with `compare-committed`. */
   diskChanges?: FileChanges
 }
 
@@ -81,10 +75,6 @@ export async function runSnapshot({
   workingDirectory: string
   config: string
   token: string
-  /**
-   * Lets the agent read the output directory, so the snapshot also compares with the generated files
-   * checked out with the repository.
-   */
   compareCommitted?: boolean
 }): Promise<SnapshotDetails> {
   const { command, args } = resolveKubbBinary(workingDirectory)

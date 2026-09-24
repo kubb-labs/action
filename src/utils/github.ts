@@ -13,11 +13,6 @@ type Pull = { head: { ref: string; repo?: { full_name?: string } | null } }
  */
 const MAX_LISTED_FILES = 50
 
-/**
- * The failure output quoted in the comment, from the end of the command's output.
- */
-const MAX_FAILURE_CHARS = 2_000
-
 const STATUS_LABEL: Record<'added' | 'changed' | 'removed', string> = { added: 'Added', changed: 'Changed', removed: 'Removed' }
 
 function commitLink(owner: string, repo: string, commit: string): string {
@@ -25,8 +20,7 @@ function commitLink(owner: string, repo: string, commit: string): string {
 }
 
 /**
- * The commit this run builds: a pull request's head commit, not the temporary merge commit
- * `context.sha` points at on a `pull_request` event.
+ * The commit this run builds: a pull request's head, not the merge commit `context.sha` points at.
  */
 export function headSha(): string {
   return (context.payload.pull_request?.head as { sha?: string } | undefined)?.sha ?? context.sha
@@ -41,22 +35,26 @@ function counts(changes: FileChanges): string {
 }
 
 /**
- * A collapsed table of paths, capped at {@link MAX_LISTED_FILES} rows.
+ * A summary line, and a collapsed table of the changed paths when there are any.
  */
-function renderFileTable(changes: FileChanges): Array<string> {
-  const total = totalOf(changes)
-  const rows = (['added', 'changed', 'removed'] as const).flatMap((status) => changes[status].map((path) => `| ${STATUS_LABEL[status]} | \`${path}\` |`))
-  const shown = rows.slice(0, MAX_LISTED_FILES)
-  const omitted = rows.length - shown.length
+function renderSection(summary: string, changes?: FileChanges): Array<string> {
+  const rows = (['added', 'changed', 'removed'] as const).flatMap(
+    (status) => changes?.[status].map((path) => `| ${STATUS_LABEL[status]} | \`${path}\` |`) ?? [],
+  )
+  const omitted = rows.length - MAX_LISTED_FILES
+
+  if (!rows.length) return ['', summary]
 
   return [
     '',
+    summary,
+    '',
     '<details>',
-    `<summary>${total} generated file${total === 1 ? '' : 's'} changed</summary>`,
+    `<summary>${rows.length} generated file${rows.length === 1 ? '' : 's'} changed</summary>`,
     '',
     '| Status | File |',
     '| --- | --- |',
-    ...shown,
+    ...rows.slice(0, MAX_LISTED_FILES),
     ...(omitted > 0 ? [`| | …and ${omitted} more file${omitted === 1 ? '' : 's'}. Install the package to see everything. |`] : []),
     '',
     '</details>',
@@ -64,63 +62,45 @@ function renderFileTable(changes: FileChanges): Array<string> {
 }
 
 /**
- * Renders the headline comparison: what the pull request changes against its base branch's latest
- * snapshot. Empty when the CLI or Studio predates it, or the run is not for a pull request.
+ * What the pull request changes against its base branch's latest snapshot.
  */
 function renderBranchChanges(changes: (SnapshotChanges & { branch: string }) | undefined, owner: string, repo: string): Array<string> {
   if (!changes) return []
 
   const branch = `\`${changes.branch}\``
-
-  if (!changes.base) {
-    return ['', `**No snapshot of ${branch} to compare with yet.** Run this workflow on pushes to ${branch} to compare pull requests with it.`]
-  }
+  if (!changes.base)
+    return renderSection(`**No snapshot of ${branch} to compare with yet.** Run this workflow on pushes to ${branch} to compare pull requests with it.`)
 
   const at = changes.base.commit ? ` (${commitLink(owner, repo, changes.base.commit)})` : ''
 
-  if (totalOf(changes) === 0) {
-    return ['', `**No changes against ${branch}**${at}`]
-  }
-
-  return ['', `**Changes against ${branch}**${at}: ${counts(changes)}`, ...renderFileTable(changes)]
+  return renderSection(totalOf(changes) ? `**Changes against ${branch}**${at}: ${counts(changes)}` : `**No changes against ${branch}**${at}`, changes)
 }
 
 /**
- * Renders the "Changes since ..." block: a one-line summary, and a collapsed table of paths when
- * there is anything to list. Empty when `changes` is absent, so an older CLI or Studio leaves the
- * comment exactly as it always looked.
+ * What changed since the previous snapshot on this pull request.
  */
 function renderChanges(changes: SnapshotChanges | undefined, owner: string, repo: string): Array<string> {
   if (!changes) return []
 
   const total = totalOf(changes)
-  const since = changes.base ? (changes.base.commit ? commitLink(owner, repo, changes.base.commit) : changes.base.createdAt) : undefined
+  // A first snapshot lists no files: every one is "added" by definition.
+  if (!changes.base) return renderSection(`**First snapshot for this pull request**: ${total} file${total === 1 ? '' : 's'} generated`)
 
-  // Nothing to diff on a first snapshot: every file is "added" by definition, not a meaningful
-  // change list. Nor when nothing changed against a real base.
-  if (!changes.base) {
-    return ['', `**First snapshot for this pull request**: ${total} file${total === 1 ? '' : 's'} generated`]
-  }
+  const since = changes.base.commit ? commitLink(owner, repo, changes.base.commit) : changes.base.createdAt
 
-  if (total === 0) {
-    return ['', `**No changes since ${since}**`]
-  }
-
-  return ['', `**Changes since ${since}**: ${counts(changes)}`, ...renderFileTable(changes)]
+  return renderSection(total ? `**Changes since ${since}**: ${counts(changes)}` : `**No changes since ${since}**`, changes)
 }
 
 /**
- * Renders how the run compares with the generated files checked out with the repository, when the
- * action was asked to compare them.
+ * How the run compares with the generated files checked out with the repository.
  */
 function renderDiskChanges(changes: FileChanges | undefined): Array<string> {
   if (!changes) return []
 
-  if (totalOf(changes) === 0) {
-    return ['', '**Matches the committed generated files**']
-  }
-
-  return ['', `**Differs from the committed generated files**: ${counts(changes)}`, ...renderFileTable(changes)]
+  return renderSection(
+    totalOf(changes) ? `**Differs from the committed generated files**: ${counts(changes)}` : '**Matches the committed generated files**',
+    changes,
+  )
 }
 
 async function upsertComment(body: string, token: string): Promise<void> {
@@ -163,14 +143,11 @@ export async function updateComment(snapshot: SnapshotDetails, token: string): P
 }
 
 /**
- * Replaces the snapshot comment with why this run failed, so a failed snapshot is visible on the
- * pull request even when the workflow step is allowed to fail. The previous package no longer
- * matches the pull request, so its install line is not kept.
+ * Replaces the snapshot comment with why this run failed, so a failure shows on the pull request
+ * even when the step may fail. The previous package no longer matches, so its install line goes.
  */
-export async function updateFailureComment({ message, token, secrets = [] }: { message: string; token: string; secrets?: Array<string> }): Promise<void> {
+export async function updateFailureComment(message: string, token: string): Promise<void> {
   const { owner, repo } = context.repo
-  const redacted = secrets.filter(Boolean).reduce((text, secret) => text.replaceAll(secret, '***'), message)
-  const quoted = redacted.length > MAX_FAILURE_CHARS ? `…${redacted.slice(-MAX_FAILURE_CHARS)}` : redacted
   const body = [
     marker,
     '### Kubb snapshot failed',
@@ -178,7 +155,7 @@ export async function updateFailureComment({ message, token, secrets = [] }: { m
     `No snapshot was published for this commit. See the [workflow run](https://github.com/${owner}/${repo}/actions/runs/${context.runId}) for the full log.`,
     '',
     '```text',
-    quoted.replaceAll('```', "'''"),
+    message.replaceAll('```', "'''"),
     '```',
     '',
     `<sub>${commitFooter(owner, repo)}</sub>`,

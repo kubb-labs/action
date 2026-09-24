@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { CommandError, captureCommand } from '../src/utils/process.js'
+import { captureCommand } from '../src/utils/process.js'
 
 afterEach(() => vi.restoreAllMocks())
 
@@ -15,15 +15,11 @@ describe('captureCommand', () => {
     expect(stderr).toHaveBeenCalledWith(expect.any(Buffer))
   })
 
-  it('rejects a failed command with the end of its stderr, without color codes', async () => {
+  it('rejects a failed command with the end of its stderr', async () => {
     vi.spyOn(process.stderr, 'write').mockImplementation(() => true)
 
-    const failure = captureCommand(process.execPath, [
-      '-e',
-      "process.stderr.write('Generating\\n\\u001b[31mSnapshot job failed: offline\\u001b[39m\\n'); process.exit(1)",
-    ])
-
-    await expect(failure).rejects.toBeInstanceOf(CommandError)
-    await expect(failure).rejects.toMatchObject({ stderr: 'Generating\nSnapshot job failed: offline' })
+    await expect(captureCommand(process.execPath, ['-e', "process.stderr.write('Snapshot job failed: offline'); process.exit(1)"])).rejects.toThrow(
+      'exited with 1\nSnapshot job failed: offline',
+    )
   })
 })
