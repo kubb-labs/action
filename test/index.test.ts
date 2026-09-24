@@ -54,7 +54,6 @@ const snapshot = {
 vi.mock('../src/utils/cli.js', () => ({ runSnapshot: vi.fn().mockResolvedValue(snapshot) }))
 
 const { initConfig, updateComment, updateFailureComment } = await import('../src/utils/github.js')
-const { CommandError } = await import('../src/utils/process.js')
 const { runSnapshot } = await import('../src/utils/cli.js')
 const { run } = await import('../src/index.js')
 
@@ -114,19 +113,6 @@ describe('run', () => {
     expect(outputs['files-removed']).toBe('0')
   })
 
-  it('counts the changes against the base branch into their own outputs', async () => {
-    vi.mocked(runSnapshot).mockResolvedValueOnce({
-      ...snapshot,
-      branchChanges: { branch: 'main', base: null, added: ['a.ts'], changed: ['b.ts', 'c.ts'], removed: ['d.ts'] },
-    })
-
-    await run()
-
-    expect(outputs['branch-files-added']).toBe('1')
-    expect(outputs['branch-files-changed']).toBe('2')
-    expect(outputs['branch-files-removed']).toBe('1')
-  })
-
   it('compares the committed files only when compare-committed is true', async () => {
     await run()
     inputs['compare-committed'] = 'true'
@@ -136,17 +122,13 @@ describe('run', () => {
     expect(vi.mocked(runSnapshot).mock.calls[1]?.[0]).toMatchObject({ compareCommitted: true })
   })
 
-  it('reports a failed snapshot on the pull request with the CLI output, then still fails', async () => {
-    const failure = new CommandError('kubb exited with 1', 'Snapshot job failed: Agent does not report peer dependencies')
+  it('reports a failed snapshot on the pull request without the CI key, then still fails', async () => {
+    const failure = new Error('kubb exited with 1\nStudio rejected ci-token')
     vi.mocked(runSnapshot).mockRejectedValueOnce(failure)
 
     await expect(run()).rejects.toBe(failure)
 
-    expect(vi.mocked(updateFailureComment)).toHaveBeenCalledWith({
-      message: 'Snapshot job failed: Agent does not report peer dependencies',
-      token: expect.any(String),
-      secrets: ['ci-token'],
-    })
+    expect(vi.mocked(updateFailureComment)).toHaveBeenCalledWith('kubb exited with 1\nStudio rejected ***', expect.any(String))
     expect(updateComment).not.toHaveBeenCalled()
   })
 

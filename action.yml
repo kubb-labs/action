@@ -43,12 +43,6 @@ outputs:
     description: Number of generated files changed since the previous snapshot on this pull request
   files-removed:
     description: Number of generated files removed since the previous snapshot on this pull request
-  branch-files-added:
-    description: Number of generated files the pull request adds against the latest snapshot of its base branch
-  branch-files-changed:
-    description: Number of generated files the pull request changes against the latest snapshot of its base branch
-  branch-files-removed:
-    description: Number of generated files the pull request removes against the latest snapshot of its base branch
 runs:
   using: node24
   main: dist/index.js

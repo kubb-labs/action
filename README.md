@@ -50,10 +50,8 @@ shows what changed in the generated files, each with a collapsed file list:
 | **Changes since `abc1234`**                    | The previous snapshot on the same pull request        | Nothing: the first push reports a first snapshot |
 | **Differs from the committed generated files** | The generated files checked out with the repository   | `compare-committed: true`                        |
 
-Snapshots expire after a week, so a base branch that goes a week without a push has nothing to
-compare with until its next run; a `schedule` trigger keeps one available. The `branch-files-*`
-and `files-*` outputs count each comparison. When a snapshot fails, the comment says so with the
-end of the CLI output and a link to the run, and the step fails. See the
+Snapshots expire after a week, so add a `schedule` trigger if the base branch can go a week
+without a push. When a snapshot fails, the comment shows the error and links the run. See the
 [Kubb Studio guide](https://kubb.dev/docs/5.x/guide/integrations/studio) and the
 [GitHub Actions guide](https://kubb.dev/docs/5.x/guide/integrations/github-actions).
 
