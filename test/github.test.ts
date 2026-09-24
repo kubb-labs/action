@@ -21,10 +21,13 @@ const getOctokit = vi.fn(() => ({
 
 let issueNumber: number | undefined = 42
 
+const payload: { repository: { default_branch: string }; pull_request?: { head: { sha: string } } } = { repository: { default_branch: 'main' } }
+
 vi.mock('@actions/github', () => ({
   context: {
     repo: { owner: 'kubb-labs', repo: 'action' },
-    payload: { repository: { default_branch: 'main' } },
+    payload,
+    runId: 321,
     get issue() {
       return { owner: 'kubb-labs', repo: 'action', number: issueNumber }
     },
@@ -33,11 +36,12 @@ vi.mock('@actions/github', () => ({
   getOctokit,
 }))
 
-const { initConfig, updateComment } = await import('../src/utils/github.js')
+const { initConfig, updateComment, updateFailureComment } = await import('../src/utils/github.js')
 
 beforeEach(() => {
   vi.clearAllMocks()
   issueNumber = 42
+  delete payload.pull_request
   listPulls.mockResolvedValue([])
   listComments.mockResolvedValue([])
   paginate.mockImplementation((fn: unknown, options: unknown) => (fn === listComments ? listComments(options) : listPulls(options)))
@@ -174,4 +178,81 @@ test('updates the existing comment instead of creating a second one', async () =
 
   expect(updateIssueComment).toHaveBeenCalledWith(expect.objectContaining({ comment_id: 7 }))
   expect(createIssueComment).not.toHaveBeenCalled()
+})
+
+const main = { id: 'snap-main', version: '1.0.0', commit: 'a1b2c3d4e5f60718293a4b5c6d7e8f9012345678', createdAt: '2026-01-01T00:00:00.000Z' }
+
+function commentBody(): string {
+  return (createIssueComment.mock.calls[0]![0] as { body: string }).body
+}
+
+test('leads with the changes against the base branch, linking its snapshot commit', async () => {
+  await updateComment(
+    {
+      ...snapshot,
+      branchChanges: { branch: 'main', base: main, added: ['models/PetStatus.ts'], changed: ['models/Pet.ts'], removed: [] },
+      changes: { base: null, added: ['models/Pet.ts', 'models/PetStatus.ts'], changed: [], removed: [] },
+    },
+    'gh-token',
+  )
+
+  const body = commentBody()
+  expect(body).toContain(
+    '**Changes against `main`** ([`a1b2c3d`](https://github.com/kubb-labs/action/commit/a1b2c3d4e5f60718293a4b5c6d7e8f9012345678)): 1 added · 1 changed · 0 removed',
+  )
+  expect(body).toContain('| Added | `models/PetStatus.ts` |')
+  expect(body.indexOf('Changes against')).toBeLessThan(body.indexOf('First snapshot for this pull request'))
+})
+
+test('says when the pull request changes nothing against the base branch', async () => {
+  await updateComment({ ...snapshot, branchChanges: { branch: 'main', base: { ...main, commit: undefined }, added: [], changed: [], removed: [] } }, 'gh-token')
+
+  expect(commentBody()).toContain('**No changes against `main`**')
+  expect(commentBody()).not.toContain('<details>')
+})
+
+test('says how to get a base branch snapshot when there is none yet', async () => {
+  await updateComment({ ...snapshot, branchChanges: { branch: 'main', base: null, added: [], changed: [], removed: [] } }, 'gh-token')
+
+  expect(commentBody()).toContain('**No snapshot of `main` to compare with yet.** Run this workflow on pushes to `main` to compare pull requests with it.')
+})
+
+test('compares with the committed generated files when asked', async () => {
+  await updateComment({ ...snapshot, diskChanges: { added: [], changed: ['src/gen/models/Pet.ts'], removed: [] } }, 'gh-token')
+  expect(commentBody()).toContain('**Differs from the committed generated files**: 0 added · 1 changed · 0 removed')
+  expect(commentBody()).toContain('| Changed | `src/gen/models/Pet.ts` |')
+
+  createIssueComment.mockClear()
+  await updateComment({ ...snapshot, diskChanges: { added: [], changed: [], removed: [] } }, 'gh-token')
+  expect(commentBody()).toContain('**Matches the committed generated files**')
+})
+
+test("links the pull request's head commit, not the merge commit the run checks out", async () => {
+  payload.pull_request = { head: { sha: 'feedface00112233445566778899aabbccddeeff' } }
+
+  await updateComment(snapshot, 'gh-token')
+
+  expect(commentBody()).toContain(
+    'commit <a href="https://github.com/kubb-labs/action/commit/feedface00112233445566778899aabbccddeeff"><code>feedfac</code></a>',
+  )
+})
+
+test('replaces the comment with the failure, redacting secrets and linking the run', async () => {
+  listComments.mockResolvedValue([{ id: 7, body: '<!-- kubb-studio-snapshot -->\nold' }])
+
+  await updateFailureComment({ message: 'Snapshot job failed: key ci-secret rejected', token: 'gh-token', secrets: ['ci-secret'] })
+
+  const body = (updateIssueComment.mock.calls[0]![0] as { body: string }).body
+  expect(body).toContain('### Kubb snapshot failed')
+  expect(body).toContain('Snapshot job failed: key *** rejected')
+  expect(body).not.toContain('ci-secret')
+  expect(body).toContain('https://github.com/kubb-labs/action/actions/runs/321')
+  expect(body).not.toContain('npm i')
+})
+
+test('keeps only the end of a long failure', async () => {
+  await updateFailureComment({ message: `${'x'.repeat(3_000)}the actual error`, token: 'gh-token' })
+
+  expect(commentBody()).toContain('the actual error')
+  expect(commentBody()).not.toContain('x'.repeat(2_100))
 })
