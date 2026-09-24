@@ -12,6 +12,7 @@ vi.mock('@actions/core', () => ({
   }),
   setFailed,
   info: vi.fn(),
+  warning: vi.fn(),
   group: vi.fn(async (_name: string, fn: () => Promise<unknown>) => fn()),
 }))
 
@@ -36,6 +37,7 @@ vi.mock('@actions/github', () => ({
 vi.mock('../src/utils/github.js', () => ({
   initConfig: vi.fn().mockResolvedValue(false),
   updateComment: vi.fn().mockResolvedValue(undefined),
+  updateFailureComment: vi.fn().mockResolvedValue(undefined),
 }))
 
 const snapshot = {
@@ -51,12 +53,14 @@ const snapshot = {
 
 vi.mock('../src/utils/cli.js', () => ({ runSnapshot: vi.fn().mockResolvedValue(snapshot) }))
 
-const { initConfig, updateComment } = await import('../src/utils/github.js')
+const { initConfig, updateComment, updateFailureComment } = await import('../src/utils/github.js')
+const { CommandError } = await import('../src/utils/process.js')
 const { runSnapshot } = await import('../src/utils/cli.js')
 const { run } = await import('../src/index.js')
 
 beforeEach(() => {
   payload.pull_request = { number: 42 }
+  delete inputs['compare-committed']
   for (const key of Object.keys(outputs)) delete outputs[key]
 })
 
@@ -108,6 +112,51 @@ describe('run', () => {
     expect(outputs['files-added']).toBe('2')
     expect(outputs['files-changed']).toBe('1')
     expect(outputs['files-removed']).toBe('0')
+  })
+
+  it('counts the changes against the base branch into their own outputs', async () => {
+    vi.mocked(runSnapshot).mockResolvedValueOnce({
+      ...snapshot,
+      branchChanges: { branch: 'main', base: null, added: ['a.ts'], changed: ['b.ts', 'c.ts'], removed: ['d.ts'] },
+    })
+
+    await run()
+
+    expect(outputs['branch-files-added']).toBe('1')
+    expect(outputs['branch-files-changed']).toBe('2')
+    expect(outputs['branch-files-removed']).toBe('1')
+  })
+
+  it('compares the committed files only when compare-committed is true', async () => {
+    await run()
+    inputs['compare-committed'] = 'true'
+    await run()
+
+    expect(vi.mocked(runSnapshot).mock.calls[0]?.[0]).toMatchObject({ compareCommitted: false })
+    expect(vi.mocked(runSnapshot).mock.calls[1]?.[0]).toMatchObject({ compareCommitted: true })
+  })
+
+  it('reports a failed snapshot on the pull request with the CLI output, then still fails', async () => {
+    const failure = new CommandError('kubb exited with 1', 'Snapshot job failed: Agent does not report peer dependencies')
+    vi.mocked(runSnapshot).mockRejectedValueOnce(failure)
+
+    await expect(run()).rejects.toBe(failure)
+
+    expect(vi.mocked(updateFailureComment)).toHaveBeenCalledWith({
+      message: 'Snapshot job failed: Agent does not report peer dependencies',
+      token: expect.any(String),
+      secrets: ['ci-token'],
+    })
+    expect(updateComment).not.toHaveBeenCalled()
+  })
+
+  it('still fails with the snapshot error when reporting it on the pull request fails', async () => {
+    const failure = new Error('Studio unavailable')
+    vi.mocked(runSnapshot).mockRejectedValueOnce(failure)
+    vi.mocked(updateFailureComment).mockRejectedValueOnce(new Error('403'))
+
+    await expect(run()).rejects.toBe(failure)
+    expect(vi.mocked(await import('@actions/core')).warning).toHaveBeenCalledWith(expect.stringContaining('403'))
   })
 
   it('stops before a snapshot when the config still needs an init PR', async () => {

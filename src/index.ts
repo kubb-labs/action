@@ -3,8 +3,9 @@ import { context } from '@actions/github'
 import { delimiter, resolve } from 'node:path'
 import Module from 'node:module'
 import { fileURLToPath } from 'node:url'
-import { initConfig, updateComment } from './utils/github.js'
+import { initConfig, updateComment, updateFailureComment } from './utils/github.js'
 import { runSnapshot } from './utils/cli.js'
+import { CommandError } from './utils/process.js'
 
 export async function run(): Promise<void> {
   if (context.payload.pull_request?.head?.repo?.fork) {
@@ -26,7 +27,16 @@ export async function run(): Promise<void> {
     return
   }
 
-  const snapshot = await core.group('Kubb Studio snapshot', () => runSnapshot({ workingDirectory: process.cwd(), config, token: apiKey }))
+  const compareCommitted = core.getInput('compare-committed') === 'true'
+  const snapshot = await core
+    .group('Kubb Studio snapshot', () => runSnapshot({ workingDirectory: process.cwd(), config, token: apiKey, compareCommitted }))
+    .catch(async (error: unknown) => {
+      // Best effort: a failed comment must not hide the snapshot failure itself.
+      await updateFailureComment({ message: failureMessage(error), token: githubToken, secrets: [apiKey] }).catch((commentError: unknown) =>
+        core.warning(`Could not report the failure on the pull request: ${commentError instanceof Error ? commentError.message : String(commentError)}`),
+      )
+      throw error
+    })
 
   core.info(
     [
@@ -47,7 +57,18 @@ export async function run(): Promise<void> {
   core.setOutput('files-added', String(snapshot.changes?.added.length ?? 0))
   core.setOutput('files-changed', String(snapshot.changes?.changed.length ?? 0))
   core.setOutput('files-removed', String(snapshot.changes?.removed.length ?? 0))
+  core.setOutput('branch-files-added', String(snapshot.branchChanges?.added.length ?? 0))
+  core.setOutput('branch-files-changed', String(snapshot.branchChanges?.changed.length ?? 0))
+  core.setOutput('branch-files-removed', String(snapshot.branchChanges?.removed.length ?? 0))
   await updateComment(snapshot, githubToken)
+}
+
+/**
+ * The reason a snapshot failed, from the end of the CLI's own output when it wrote one.
+ */
+function failureMessage(error: unknown): string {
+  if (error instanceof CommandError && error.stderr) return error.stderr
+  return error instanceof Error ? error.message : String(error)
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])) {
