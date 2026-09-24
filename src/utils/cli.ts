@@ -47,7 +47,7 @@ export function resolveKubbBinary(workingDirectory: string): { command: string; 
     return { command: localBinary, args: [] }
   }
 
-  return { command: 'npx', args: ['--yes', '--package', '@kubb/cli', '--package', '@kubb/studio', 'kubb'] }
+  return { command: 'npx', args: ['--yes', '--package', '@kubb/cli@^5.3.16', '--package', '@kubb/studio@^5.3.16', 'kubb'] }
 }
 
 /**

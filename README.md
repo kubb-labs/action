@@ -38,4 +38,5 @@ The pull-request comment links to the generated package and its Studio agent. Re
 The action runs `kubb studio snapshot` from the repository's own `node_modules/.bin/kubb` when one
 exists, so it uses the same Kubb version the repository's config and plugins are built against.
 When a repository has no local install, it falls back to
-`npx --package @kubb/cli --package @kubb/studio kubb studio snapshot`.
+`npx --package @kubb/cli --package @kubb/studio kubb studio snapshot`. The changes summary needs
+Kubb 5.3.16 or later; with an older local install the comment leaves it out.
