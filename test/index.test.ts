@@ -59,7 +59,6 @@ const { run } = await import('../src/index.js')
 
 beforeEach(() => {
   payload.pull_request = { number: 42 }
-  delete inputs['compare-committed']
   for (const key of Object.keys(outputs)) delete outputs[key]
 })
 
@@ -111,15 +110,6 @@ describe('run', () => {
     expect(outputs['files-added']).toBe('2')
     expect(outputs['files-changed']).toBe('1')
     expect(outputs['files-removed']).toBe('0')
-  })
-
-  it('compares the committed files only when compare-committed is true', async () => {
-    await run()
-    inputs['compare-committed'] = 'true'
-    await run()
-
-    expect(vi.mocked(runSnapshot).mock.calls[0]?.[0]).toMatchObject({ compareCommitted: false })
-    expect(vi.mocked(runSnapshot).mock.calls[1]?.[0]).toMatchObject({ compareCommitted: true })
   })
 
   it('reports a failed snapshot on the pull request without the CI key, then still fails', async () => {

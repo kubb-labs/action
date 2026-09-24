@@ -20,10 +20,6 @@ inputs:
     description: Path to the Kubb config file, relative to working-directory
     default: kubb.config.ts
     required: false
-  compare-committed:
-    description: Also compare the snapshot with the generated files checked out with the repository, such as committed generated code. Lets the agent read the output directory.
-    default: 'false'
-    required: false
 outputs:
   snapshot-id:
     description: ID of the generated snapshot

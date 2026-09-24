@@ -5,19 +5,13 @@ import { captureCommand } from './process.js'
 export const studioUrl = (process.env.KUBB_STUDIO_URL ?? 'https://kubb.studio').replace(/\/$/, '')
 
 /**
- * Generated files that differ between two sets, by path relative to the Kubb config's `root`.
+ * How generated files differ from an earlier snapshot. `base` is `null` when there is none.
  */
-export type FileChanges = {
+export type SnapshotChanges = {
+  base: { id: string; version: string | null; commit?: string; createdAt: string } | null
   added: Array<string>
   changed: Array<string>
   removed: Array<string>
-}
-
-/**
- * How generated files differ from an earlier snapshot. `base` is `null` when there is none.
- */
-export type SnapshotChanges = FileChanges & {
-  base: { id: string; version: string | null; commit?: string; createdAt: string } | null
 }
 
 /**
@@ -33,13 +27,11 @@ export type SnapshotDetails = {
   expiresAt: string
   agentUrl: string
   /**
-   * Absent when the CLI or Studio predates it, like the two below.
+   * Absent when the CLI or Studio predates it, like the one below.
    */
   changes?: SnapshotChanges
   /** Against the pull request's base branch. */
   branchChanges?: SnapshotChanges & { branch: string }
-  /** Against the checked-out generated files, with `compare-committed`. */
-  diskChanges?: FileChanges
 }
 
 /**
@@ -66,21 +58,10 @@ export function resolveKubbBinary(workingDirectory: string): { command: string; 
  * URL through its `--url` option, and detects the CI agent identity from the environment on its
  * own, the same way it does for every CI provider it supports.
  */
-export async function runSnapshot({
-  workingDirectory,
-  config,
-  token,
-  compareCommitted = false,
-}: {
-  workingDirectory: string
-  config: string
-  token: string
-  compareCommitted?: boolean
-}): Promise<SnapshotDetails> {
+export async function runSnapshot({ workingDirectory, config, token }: { workingDirectory: string; config: string; token: string }): Promise<SnapshotDetails> {
   const { command, args } = resolveKubbBinary(workingDirectory)
   console.info(`Kubb Studio snapshot: binary=${command}, url=${studioUrl}`)
-  const flags = ['--json', '--config', config, '--url', studioUrl, ...(compareCommitted ? ['--allow-read'] : [])]
-  const stdout = await captureCommand(command, [...args, 'studio', 'snapshot', ...flags], {
+  const stdout = await captureCommand(command, [...args, 'studio', 'snapshot', '--json', '--config', config, '--url', studioUrl], {
     ...process.env,
     KUBB_TOKEN: token,
   })

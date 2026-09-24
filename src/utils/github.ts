@@ -2,13 +2,13 @@ import { context, getOctokit } from '@actions/github'
 import { existsSync, mkdirSync, renameSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { runCommand } from './process.js'
-import type { FileChanges, SnapshotChanges, SnapshotDetails } from './cli.js'
+import type { SnapshotChanges, SnapshotDetails } from './cli.js'
 
 const marker = '<!-- kubb-studio-snapshot -->'
 type Pull = { head: { ref: string; repo?: { full_name?: string } | null } }
 
 /**
- * Each file table stays short enough that all three together keep the comment under GitHub's
+ * Each file table stays short enough that both together keep the comment under GitHub's
  * ~65,536-char limit, even on a package with thousands of generated files.
  */
 const MAX_LISTED_FILES = 50
@@ -26,18 +26,18 @@ export function headSha(): string {
   return (context.payload.pull_request?.head as { sha?: string } | undefined)?.sha ?? context.sha
 }
 
-function totalOf(changes: FileChanges): number {
+function totalOf(changes: SnapshotChanges): number {
   return changes.added.length + changes.changed.length + changes.removed.length
 }
 
-function counts(changes: FileChanges): string {
+function counts(changes: SnapshotChanges): string {
   return `${changes.added.length} added · ${changes.changed.length} changed · ${changes.removed.length} removed`
 }
 
 /**
  * A summary line, and a collapsed table of the changed paths when there are any.
  */
-function renderSection(summary: string, changes?: FileChanges): Array<string> {
+function renderSection(summary: string, changes?: SnapshotChanges): Array<string> {
   const rows = (['added', 'changed', 'removed'] as const).flatMap(
     (status) => changes?.[status].map((path) => `| ${STATUS_LABEL[status]} | \`${path}\` |`) ?? [],
   )
@@ -91,18 +91,6 @@ function renderChanges(changes: SnapshotChanges | undefined, owner: string, repo
   return renderSection(total ? `**Changes since ${since}**: ${counts(changes)}` : `**No changes since ${since}**`, changes)
 }
 
-/**
- * How the run compares with the generated files checked out with the repository.
- */
-function renderDiskChanges(changes: FileChanges | undefined): Array<string> {
-  if (!changes) return []
-
-  return renderSection(
-    totalOf(changes) ? `**Differs from the committed generated files**: ${counts(changes)}` : '**Matches the committed generated files**',
-    changes,
-  )
-}
-
 async function upsertComment(body: string, token: string): Promise<void> {
   if (!token || !context.issue.number) return
   const github = getOctokit(token)
@@ -132,7 +120,6 @@ export async function updateComment(snapshot: SnapshotDetails, token: string): P
     '```',
     ...renderBranchChanges(snapshot.branchChanges, owner, repo),
     ...renderChanges(snapshot.changes, owner, repo),
-    ...renderDiskChanges(snapshot.diskChanges),
     '',
     `[Package](${snapshot.url}) · [Studio agent](${snapshot.agentUrl})`,
     '',
