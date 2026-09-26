@@ -1,6 +1,6 @@
 {
   "name": "@kubb-labs/action",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "private": true,
   "description": "Publish generated Kubb packages from GitHub Actions",
   "license": "MIT",
