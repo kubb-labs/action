@@ -2,7 +2,7 @@ import { context, getOctokit } from '@actions/github'
 import { existsSync, mkdirSync, renameSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { runCommand } from './process.js'
-import type { SnapshotChanges, SnapshotDetails } from './cli.js'
+import type { BranchSnapshotChanges, SnapshotChanges, SnapshotDetails } from './cli.js'
 
 const marker = '<!-- kubb-studio-snapshot -->'
 type Pull = { head: { ref: string; repo?: { full_name?: string } | null } }
@@ -64,12 +64,15 @@ function renderSection(summary: string, changes?: SnapshotChanges): Array<string
 /**
  * What the pull request changes against its base branch's latest snapshot.
  */
-function renderBranchChanges(changes: (SnapshotChanges & { branch: string }) | undefined, owner: string, repo: string): Array<string> {
+function renderBranchChanges(changes: BranchSnapshotChanges | undefined, owner: string, repo: string): Array<string> {
   if (!changes) return []
 
   const branch = `\`${changes.branch}\``
-  if (!changes.base)
-    return renderSection(`**No snapshot of ${branch} to compare with yet.** Run this workflow on pushes to ${branch} to compare pull requests with it.`)
+  if (!changes.base) {
+    return changes.baseFound
+      ? renderSection(`**No snapshot of ${branch} for this package yet.**`)
+      : renderSection(`**No snapshot of ${branch} to compare with yet.** Run this workflow on pushes to ${branch} to compare pull requests with it.`)
+  }
 
   const at = changes.base.commit ? ` (${commitLink(owner, repo, changes.base.commit)})` : ''
 

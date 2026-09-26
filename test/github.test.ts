@@ -190,7 +190,7 @@ test('leads with the changes against the base branch, linking its snapshot commi
   await updateComment(
     {
       ...snapshot,
-      branchChanges: { branch: 'main', base: main, added: ['models/PetStatus.ts'], changed: ['models/Pet.ts'], removed: [] },
+      branchChanges: { branch: 'main', base: main, added: ['models/PetStatus.ts'], changed: ['models/Pet.ts'], removed: [], baseFound: true },
       changes: { base: null, added: ['models/Pet.ts', 'models/PetStatus.ts'], changed: [], removed: [] },
     },
     'gh-token',
@@ -205,16 +205,26 @@ test('leads with the changes against the base branch, linking its snapshot commi
 })
 
 test('says when the pull request changes nothing against the base branch', async () => {
-  await updateComment({ ...snapshot, branchChanges: { branch: 'main', base: { ...main, commit: undefined }, added: [], changed: [], removed: [] } }, 'gh-token')
+  await updateComment(
+    { ...snapshot, branchChanges: { branch: 'main', base: { ...main, commit: undefined }, added: [], changed: [], removed: [], baseFound: true } },
+    'gh-token',
+  )
 
   expect(commentBody()).toContain('**No changes against `main`**')
   expect(commentBody()).not.toContain('<details>')
 })
 
-test('says how to get a base branch snapshot when there is none yet', async () => {
-  await updateComment({ ...snapshot, branchChanges: { branch: 'main', base: null, added: [], changed: [], removed: [] } }, 'gh-token')
+test('says how to get a base branch snapshot when no agent has run there yet', async () => {
+  await updateComment({ ...snapshot, branchChanges: { branch: 'main', base: null, added: [], changed: [], removed: [], baseFound: false } }, 'gh-token')
 
   expect(commentBody()).toContain('**No snapshot of `main` to compare with yet.** Run this workflow on pushes to `main` to compare pull requests with it.')
+})
+
+test('says the package is new to the base branch when its agent exists but has no snapshot yet', async () => {
+  await updateComment({ ...snapshot, branchChanges: { branch: 'main', base: null, added: [], changed: [], removed: [], baseFound: true } }, 'gh-token')
+
+  expect(commentBody()).toContain('**No snapshot of `main` for this package yet.**')
+  expect(commentBody()).not.toContain('Run this workflow on pushes to')
 })
 
 test("links the pull request's head commit, not the merge commit the run checks out", async () => {

@@ -15,6 +15,13 @@ export type SnapshotChanges = {
 }
 
 /**
+ * `SnapshotChanges` against the pull request's base branch. `baseFound` tells apart the two reasons
+ * `base` can be `null`: `false` when no CI agent is registered for the branch yet (the workflow has
+ * never run there), `true` when that agent exists but has no snapshot of this package to compare with.
+ */
+export type BranchSnapshotChanges = SnapshotChanges & { branch: string; baseFound: boolean }
+
+/**
  * Package view `kubb studio snapshot --json` prints, absolute and ready to use.
  */
 export type SnapshotDetails = {
@@ -31,7 +38,7 @@ export type SnapshotDetails = {
    */
   changes?: SnapshotChanges
   /** Against the pull request's base branch. */
-  branchChanges?: SnapshotChanges & { branch: string }
+  branchChanges?: BranchSnapshotChanges
 }
 
 /**
