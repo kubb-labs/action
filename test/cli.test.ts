@@ -1,12 +1,13 @@
+import { createHash } from 'node:crypto'
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('../src/utils/process.js', () => ({ captureCommand: vi.fn() }))
 
 const { captureCommand } = await import('../src/utils/process.js')
-const { resolveKubbBinary, runSnapshot } = await import('../src/utils/cli.js')
+const { pullRequestMachineToken, releaseAgent, resolveKubbBinary, runSnapshot } = await import('../src/utils/cli.js')
 
 const tempDirs: Array<string> = []
 
@@ -100,5 +101,48 @@ describe('runSnapshot', () => {
     const snapshot = await runSnapshot({ workingDirectory: project, config: '/repo/kubb.config.ts', token: 'ci-token' })
 
     expect(snapshot.changes).toEqual(changes)
+  })
+})
+
+describe('pullRequestMachineToken', () => {
+  it('hashes the identity `kubb studio snapshot` derives for a pull request', () => {
+    const token = pullRequestMachineToken(42, { GITHUB_REPOSITORY_ID: '123456' })
+
+    expect(token).toBe(createHash('sha256').update('gh:123456:42').digest('hex'))
+  })
+
+  it('falls back to the repository name without an id', () => {
+    expect(pullRequestMachineToken(7, { GITHUB_REPOSITORY: 'acme/api' })).toBe(createHash('sha256').update('gh:acme/api:7').digest('hex'))
+  })
+})
+
+describe('releaseAgent', () => {
+  const fetchMock = vi.fn()
+
+  beforeEach(() => vi.stubGlobal('fetch', fetchMock))
+  afterEach(() => vi.unstubAllGlobals())
+
+  it('sends the machine token with the CI key in a header', async () => {
+    fetchMock.mockResolvedValue(new Response(null, { status: 200 }))
+
+    await expect(releaseAgent({ token: 'ci-token', prNumber: 42 })).resolves.toBe(true)
+
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit]
+    expect(url).toMatch(/\/api\/agents$/)
+    expect(init.method).toBe('DELETE')
+    expect(init.headers).toMatchObject({ 'x-api-key': 'ci-token' })
+    expect(JSON.parse(init.body as string)).toEqual({ machineToken: pullRequestMachineToken(42) })
+  })
+
+  it('returns false when Studio has no such agent', async () => {
+    fetchMock.mockResolvedValue(new Response(null, { status: 404 }))
+
+    await expect(releaseAgent({ token: 'ci-token', prNumber: 42 })).resolves.toBe(false)
+  })
+
+  it('throws on any other failure without echoing the key', async () => {
+    fetchMock.mockResolvedValue(new Response(null, { status: 500 }))
+
+    await expect(releaseAgent({ token: 'ci-token', prNumber: 42 })).rejects.toThrow('HTTP 500')
   })
 })

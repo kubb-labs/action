@@ -4,11 +4,21 @@ import { delimiter, resolve } from 'node:path'
 import Module from 'node:module'
 import { fileURLToPath } from 'node:url'
 import { initConfig, updateComment, updateFailureComment } from './utils/github.js'
-import { runSnapshot } from './utils/cli.js'
+import { releaseAgent, runSnapshot } from './utils/cli.js'
 
 export async function run(): Promise<void> {
   if (context.payload.pull_request?.head?.repo?.fork) {
     core.info('Skipping Kubb snapshot: GitHub does not expose repository secrets to fork pull requests.')
+    return
+  }
+  if (context.payload.action === 'closed' && context.payload.pull_request) {
+    const apiKey = core.getInput('token', { required: true })
+    core.setSecret(apiKey)
+    // Best effort: a failed cleanup must not fail the closed pull request's workflow. The nightly
+    // idle cleanup in Studio removes the agent later anyway.
+    await releaseAgent({ token: apiKey, prNumber: context.payload.pull_request.number })
+      .then((deleted) => core.info(deleted ? 'Deleted the Kubb Studio agent of this pull request.' : 'No Kubb Studio agent to delete for this pull request.'))
+      .catch((error: unknown) => core.warning(`Could not delete the Kubb Studio agent: ${String(error)}`))
     return
   }
   process.chdir(resolve(process.cwd(), core.getInput('working-directory') || '.'))

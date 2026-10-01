@@ -1,3 +1,4 @@
+import { hash } from 'node:crypto'
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { captureCommand } from './process.js'
@@ -79,4 +80,31 @@ export async function runSnapshot({ workingDirectory, config, token }: { working
     .find((line) => line.startsWith('{'))
 
   return JSON.parse(json ?? stdout.trim()) as SnapshotDetails
+}
+
+/**
+ * Machine token of a pull request's CI agent. It repeats the identity `kubb studio snapshot`
+ * derives on GitHub (`gh:<repositoryId>:<prNumber>`, hashed with SHA-256), so both name one agent.
+ */
+export function pullRequestMachineToken(prNumber: number, env: Record<string, string | undefined> = process.env): string {
+  return hash('sha256', `gh:${env.GITHUB_REPOSITORY_ID ?? env.GITHUB_REPOSITORY ?? ''}:${prNumber}`)
+}
+
+/**
+ * Deletes the pull request's CI agent from Studio (`DELETE /api/agents`).
+ *
+ * Returns `false` when Studio has no such agent, like a pull request that never ran the workflow
+ * or one cleaned up already. The CI API key goes in `x-api-key`, never in the URL.
+ */
+export async function releaseAgent({ token, prNumber }: { token: string; prNumber: number }): Promise<boolean> {
+  const response = await fetch(`${studioUrl}/api/agents`, {
+    method: 'DELETE',
+    headers: { 'content-type': 'application/json', 'x-api-key': token },
+    body: JSON.stringify({ machineToken: pullRequestMachineToken(prNumber) }),
+  })
+
+  if (response.status === 404) return false
+  if (!response.ok) throw new Error(`Kubb Studio could not delete the agent (HTTP ${response.status})`)
+
+  return true
 }
