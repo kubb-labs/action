@@ -1,5 +1,13 @@
 # @kubb-labs/action
 
+## 0.5.0
+
+### Minor Changes
+
+- f8b077d: Delete the pull request's Kubb Studio agent when the pull request closes. Add `closed` to the
+  workflow's `pull_request` types, since GitHub leaves it out by default. A failed delete only logs a
+  warning. This needs a Studio release that supports `DELETE /api/agents` with a CI API key.
+
 ## 0.4.1
 
 ### Patch Changes
