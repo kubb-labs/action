@@ -13,6 +13,8 @@ name: Kubb snapshot
 
 on:
   pull_request:
+    # `closed` deletes the pull request's Studio agent. GitHub leaves it out by default.
+    types: [opened, synchronize, reopened, closed]
   # Snapshots of main are what pull requests compare with.
   push:
     branches: [main]
@@ -48,6 +50,10 @@ shows what changed in the generated files, each with a collapsed file list:
 | --------------------------- | ----------------------------------------------------- | ------------------------------------------------ |
 | **Changes against `main`**  | The latest snapshot of the pull request's base branch | The workflow running on pushes to that branch    |
 | **Changes since `abc1234`** | The previous snapshot on the same pull request        | Nothing: the first push reports a first snapshot |
+
+When a pull request closes, the action deletes its Studio agent. This needs a Studio release
+that accepts `DELETE /api/agents` with a CI API key; until then it logs a warning and the idle
+cleanup removes the agent later.
 
 Snapshots expire after a week, so add a `schedule` trigger if the base branch can go a week
 without a push. When a snapshot fails, the comment shows the error and links the run. See the

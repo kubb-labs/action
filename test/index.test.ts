@@ -16,7 +16,7 @@ vi.mock('@actions/core', () => ({
   group: vi.fn(async (_name: string, fn: () => Promise<unknown>) => fn()),
 }))
 
-const payload: { pull_request?: { number: number; head?: { repo?: { fork: boolean } } }; repository?: { id: number } } = {
+const payload: { action?: string; pull_request?: { number: number; head?: { repo?: { fork: boolean } } }; repository?: { id: number } } = {
   pull_request: { number: 42 },
   repository: { id: 123456 },
 }
@@ -51,13 +51,14 @@ const snapshot = {
   agentUrl: 'https://kubb.studio/agents/brave-otter',
 }
 
-vi.mock('../src/utils/cli.js', () => ({ runSnapshot: vi.fn().mockResolvedValue(snapshot) }))
+vi.mock('../src/utils/cli.js', () => ({ runSnapshot: vi.fn().mockResolvedValue(snapshot), releaseAgent: vi.fn().mockResolvedValue(true) }))
 
 const { initConfig, updateComment, updateFailureComment } = await import('../src/utils/github.js')
-const { runSnapshot } = await import('../src/utils/cli.js')
+const { runSnapshot, releaseAgent } = await import('../src/utils/cli.js')
 const { run } = await import('../src/index.js')
 
 beforeEach(() => {
+  payload.action = 'synchronize'
   payload.pull_request = { number: 42 }
   for (const key of Object.keys(outputs)) delete outputs[key]
 })
@@ -72,6 +73,24 @@ describe('run', () => {
 
     await run()
 
+    expect(runSnapshot).not.toHaveBeenCalled()
+  })
+
+  it('deletes the pull request agent instead of running a snapshot when the pull request closes', async () => {
+    payload.action = 'closed'
+
+    await run()
+
+    expect(releaseAgent).toHaveBeenCalledWith({ token: 'ci-token', prNumber: 42 })
+    expect(runSnapshot).not.toHaveBeenCalled()
+    expect(setFailed).not.toHaveBeenCalled()
+  })
+
+  it('does not fail the workflow when deleting the agent fails', async () => {
+    payload.action = 'closed'
+    vi.mocked(releaseAgent).mockRejectedValueOnce(new Error('boom'))
+
+    await expect(run()).resolves.toBeUndefined()
     expect(runSnapshot).not.toHaveBeenCalled()
   })
 
