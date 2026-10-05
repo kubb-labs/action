@@ -57,8 +57,8 @@ cleanup removes the agent later.
 
 Snapshots expire after a week, so add a `schedule` trigger if the base branch can go a week
 without a push. When a snapshot fails, the comment shows the error and links the run. See the
-[Kubb Studio guide](https://kubb.dev/docs/5.x/how-to/studio) and the
-[GitHub Actions guide](https://kubb.dev/docs/5.x/how-to/ci#github-actions).
+[Kubb Studio guide](https://kubb.dev/docs/5.x/how-to/integrations/studio) and the
+[GitHub Actions guide](https://kubb.dev/docs/5.x/how-to/integrations/ci#github-actions).
 
 ## Resolving `kubb`
 
