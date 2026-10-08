@@ -12,7 +12,7 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: kubb-labs/config/.github/setup@ec40df0e3e54565e006f6d92a2fce16ff43b14d8 # main
+      - uses: kubb-labs/config/.github/setup@d0ff54e67d893d61f92cd331c71dc60762ec3d48 # main
         with:
           node-version: '22.22.3'
       - run: pnpm run format
@@ -29,7 +29,7 @@ jobs:
     if: github.actor != 'github-actions[bot]'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: kubb-labs/config/.github/setup@ec40df0e3e54565e006f6d92a2fce16ff43b14d8 # main
+      - uses: kubb-labs/config/.github/setup@d0ff54e67d893d61f92cd331c71dc60762ec3d48 # main
         with:
           node-version: '22.22.3'
       - run: pnpm test --coverage
@@ -66,7 +66,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-      - uses: kubb-labs/config/.github/setup@ec40df0e3e54565e006f6d92a2fce16ff43b14d8 # main
+      - uses: kubb-labs/config/.github/setup@d0ff54e67d893d61f92cd331c71dc60762ec3d48 # main
         with:
           node-version: '22.22.3'
       - uses: preactjs/compressed-size-action@f322c295dde06a1cb7ccaef105732dd8a726d1d9 # v2.10.0
