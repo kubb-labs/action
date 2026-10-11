@@ -28,7 +28,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - uses: kubb-labs/action@v1
+      - uses: kubb-labs/action@v0
         with:
           token: ${{ secrets.KUBB_TOKEN }}
 ```
@@ -36,6 +36,9 @@ jobs:
 The repository needs `KUBB_TOKEN` in Actions secrets: an organization CI API key, sent as
 `x-api-key`. Set `KUBB_STUDIO_URL` only for a self-hosted Studio deployment; the default is
 `https://kubb.studio`.
+
+To let the action open the init pull request, turn on Allow GitHub Actions to create and approve
+pull requests under Settings > Actions > General.
 
 The pull-request comment links to the generated package and its Studio agent, so reviewers can
 install and inspect the result without recreating the workflow locally. Below the install line it
@@ -46,9 +49,8 @@ shows what changed in the generated files, each with a collapsed file list:
 | **Changes against `main`**  | The latest snapshot of the pull request's base branch | The workflow running on pushes to that branch    |
 | **Changes since `abc1234`** | The previous snapshot on the same pull request        | Nothing: the first push reports a first snapshot |
 
-When a pull request closes, the action deletes its Studio agent. This needs a Studio release
-that accepts `DELETE /api/agents` with a CI API key; until then it logs a warning and the idle
-cleanup removes the agent later.
+When a pull request closes, the action deletes its Studio agent. If that fails, it logs a warning
+and Studio's idle cleanup removes the agent later.
 
 Snapshots expire after a week, so add a `schedule` trigger if the base branch can go a week
 without a push. When a snapshot fails, the comment shows the error and links the run. See the
@@ -60,5 +62,6 @@ without a push. When a snapshot fails, the comment shows the error and links the
 The action runs `kubb studio snapshot` from the repository's own `node_modules/.bin/kubb` when one
 exists, so it uses the same Kubb version the repository's config and plugins are built against.
 When a repository has no local install, it falls back to
-`npx --package @kubb/cli --package @kubb/studio kubb studio snapshot`. A local install must be
-Kubb 5.6.1 or later. Studio rejects snapshots from older versions.
+`npx --package @kubb/cli@^5.6.1 --package @kubb/studio@^5.6.1 kubb studio snapshot`. A local
+install must be Kubb 5.6.2 or later. Studio rejects versions before 5.6.1, and
+`kubb studio snapshot` in 5.6.1 fails on a config that does not set `storage`.
