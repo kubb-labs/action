@@ -45,9 +45,8 @@ export type SnapshotDetails = {
 /**
  * Where to run `kubb` from: the target repository's own install when it has one, since that is
  * the Kubb version its config and plugins are built against. Falls back to `npx`, so a repository
- * with no local `@kubb/cli` still works, the same way running the action bundled its own copy did
- * before this refactor. `@kubb/studio` is an optional peer of `@kubb/cli`, and `kubb studio` loads
- * it lazily, so both packages are named on the `npx` fallback.
+ * with no local `@kubb/cli` still works. `@kubb/studio` is an optional peer of `@kubb/cli`, and
+ * `kubb studio` loads it lazily, so both packages are named on the `npx` fallback.
  */
 export function resolveKubbBinary(workingDirectory: string): { command: string; args: Array<string> } {
   const localBinary = join(workingDirectory, 'node_modules', '.bin', 'kubb')

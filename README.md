@@ -60,7 +60,5 @@ without a push. When a snapshot fails, the comment shows the error and links the
 The action runs `kubb studio snapshot` from the repository's own `node_modules/.bin/kubb` when one
 exists, so it uses the same Kubb version the repository's config and plugins are built against.
 When a repository has no local install, it falls back to
-`npx --package @kubb/cli --package @kubb/studio kubb studio snapshot`. The changes since the
-previous snapshot need Kubb 5.3.16 or later, and the base branch comparison needs the release
-after it (kubb-labs/kubb#4100); with an older local install the comment leaves
-them out.
+`npx --package @kubb/cli --package @kubb/studio kubb studio snapshot`. A local install must be
+Kubb 5.6.1 or later. Studio rejects snapshots from older versions.
