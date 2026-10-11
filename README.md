@@ -23,11 +23,6 @@ permissions:
   contents: write
   pull-requests: write
 
-# One run per pull request or branch at a time: runs of the same one share a Studio agent.
-concurrency:
-  group: kubb-snapshot-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
   snapshot:
     runs-on: ubuntu-latest
