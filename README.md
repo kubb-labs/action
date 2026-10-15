@@ -44,10 +44,10 @@ The pull-request comment links to the generated package and its Studio agent, so
 install and inspect the result without recreating the workflow locally. Below the install line it
 shows what changed in the generated files, each with a collapsed file list:
 
-| Section                     | Compared with                                         | Needs                                            |
-| --------------------------- | ----------------------------------------------------- | ------------------------------------------------ |
-| **Changes against `main`**  | The latest snapshot of the pull request's base branch | The workflow running on pushes to that branch    |
-| **Changes since `abc1234`** | The previous snapshot on the same pull request        | Nothing: the first push reports a first snapshot |
+| Section                                 | Compared with                                         | Needs                                            |
+| --------------------------------------- | ----------------------------------------------------- | ------------------------------------------------ |
+| **Changes against `main`**              | The latest snapshot of the pull request's base branch | The workflow running on pushes to that branch    |
+| **Changes since the previous snapshot** | The previous snapshot on the same pull request        | Nothing: the first push reports a first snapshot |
 
 When a pull request closes, the action deletes its Studio agent. If that fails, it logs a warning
 and Studio's idle cleanup removes the agent later.
