@@ -1,5 +1,11 @@
 # @kubb-labs/action
 
+## 0.5.2
+
+### Patch Changes
+
+- 7ec5cb1: Make the pull-request comment easier to read: the changes since the previous snapshot say so instead of only naming a commit, zero counts are left out, the file list summary reads "Show N files", the package link says it downloads, and dates show without the time.
+
 ## 0.5.1
 
 ### Patch Changes
