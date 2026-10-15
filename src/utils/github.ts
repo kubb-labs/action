@@ -30,8 +30,21 @@ function totalOf(changes: SnapshotChanges): number {
   return changes.added.length + changes.changed.length + changes.removed.length
 }
 
+/**
+ * Only the non-zero counts: "1 added · 2 removed".
+ */
 function counts(changes: SnapshotChanges): string {
-  return `${changes.added.length} added · ${changes.changed.length} changed · ${changes.removed.length} removed`
+  return (['added', 'changed', 'removed'] as const)
+    .filter((status) => changes[status].length)
+    .map((status) => `${changes[status].length} ${status}`)
+    .join(' · ')
+}
+
+/**
+ * The date of an ISO timestamp, which is all a reader needs from it.
+ */
+function day(iso: string): string {
+  return iso.slice(0, 10)
 }
 
 /**
@@ -50,7 +63,7 @@ function renderSection(summary: string, changes?: SnapshotChanges): Array<string
     summary,
     '',
     '<details>',
-    `<summary>${rows.length} generated file${rows.length === 1 ? '' : 's'} changed</summary>`,
+    `<summary>Show ${rows.length} file${rows.length === 1 ? '' : 's'}</summary>`,
     '',
     '| Status | File |',
     '| --- | --- |',
@@ -89,9 +102,9 @@ function renderChanges(changes: SnapshotChanges | undefined, owner: string, repo
   // A first snapshot lists no files: every one is "added" by definition.
   if (!changes.base) return renderSection(`**First snapshot for this pull request**: ${total} file${total === 1 ? '' : 's'} generated`)
 
-  const since = changes.base.commit ? commitLink(owner, repo, changes.base.commit) : changes.base.createdAt
+  const at = ` (${changes.base.commit ? commitLink(owner, repo, changes.base.commit) : day(changes.base.createdAt)})`
 
-  return renderSection(total ? `**Changes since ${since}**: ${counts(changes)}` : `**No changes since ${since}**`, changes)
+  return renderSection(total ? `**Changes since the previous snapshot**${at}: ${counts(changes)}` : `**No changes since the previous snapshot**${at}`, changes)
 }
 
 async function upsertComment(body: string, token: string): Promise<void> {
@@ -124,9 +137,9 @@ export async function updateComment(snapshot: SnapshotDetails, token: string): P
     ...renderBranchChanges(snapshot.branchChanges, owner, repo),
     ...renderChanges(snapshot.changes, owner, repo),
     '',
-    `[Package](${snapshot.url}) · [Studio agent](${snapshot.agentUrl})`,
+    `[Download package](${snapshot.url}) · [Studio agent](${snapshot.agentUrl})`,
     '',
-    `<sub>Expires ${snapshot.expiresAt ?? 'soon'} · ${commitFooter(owner, repo)}</sub>`,
+    `<sub>Expires ${snapshot.expiresAt ? day(snapshot.expiresAt) : 'soon'} · ${commitFooter(owner, repo)}</sub>`,
   ].join('\n')
 
   await upsertComment(body, token)

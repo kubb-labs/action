@@ -132,12 +132,12 @@ test('summarizes and lists changes against the previous snapshot, linking its co
 
   const body = createIssueComment.mock.calls[0]![0].body as string
   expect(body).toContain(
-    '**Changes since [`9f3e2a1`](https://github.com/kubb-labs/action/commit/9f3e2a1bbccdd00112233445566778899aabbcc)**: 1 added · 1 changed · 1 removed',
+    '**Changes since the previous snapshot** ([`9f3e2a1`](https://github.com/kubb-labs/action/commit/9f3e2a1bbccdd00112233445566778899aabbcc)): 1 added · 1 changed · 1 removed',
   )
   expect(body).toContain('| Added | `models/PetStatus.ts` |')
   expect(body).toContain('| Changed | `clients/updatePet.ts` |')
   expect(body).toContain('| Removed | `models/LegacyPetStatus.ts` |')
-  expect(body).toContain('<summary>3 generated files changed</summary>')
+  expect(body).toContain('<summary>Show 3 files</summary>')
 })
 
 test('reports no changes without a file list when nothing changed', async () => {
@@ -150,7 +150,9 @@ test('reports no changes without a file list when nothing changed', async () => 
   )
 
   const body = createIssueComment.mock.calls[0]![0].body as string
-  expect(body).toContain('**No changes since 2026-01-01T00:00:00.000Z**')
+  expect(body).toContain('**No changes since the previous snapshot** (2026-01-01)')
+  expect(body).toContain('Expires 2026-01-08 ·')
+  expect(body).toContain('[Download package](https://kubb.studio/packages/brave-otter/%40acme%2Fapi.tgz)')
   expect(body).not.toContain('<details>')
 })
 
@@ -198,7 +200,7 @@ test('leads with the changes against the base branch, linking its snapshot commi
 
   const body = commentBody()
   expect(body).toContain(
-    '**Changes against `main`** ([`a1b2c3d`](https://github.com/kubb-labs/action/commit/a1b2c3d4e5f60718293a4b5c6d7e8f9012345678)): 1 added · 1 changed · 0 removed',
+    '**Changes against `main`** ([`a1b2c3d`](https://github.com/kubb-labs/action/commit/a1b2c3d4e5f60718293a4b5c6d7e8f9012345678)): 1 added · 1 changed',
   )
   expect(body).toContain('| Added | `models/PetStatus.ts` |')
   expect(body.indexOf('Changes against')).toBeLessThan(body.indexOf('First snapshot for this pull request'))
