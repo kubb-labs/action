@@ -1,3 +1,9 @@
+<div align="center">
+  <a href="https://kubb.dev" target="_blank" rel="noopener noreferrer">
+    <img src="https://kubb.dev/og.png" alt="Kubb banner">
+  </a>
+</div>
+
 # Kubb GitHub Action
 
 The Kubb GitHub Action generates a package snapshot from CI and publishes it to Kubb Studio. It
