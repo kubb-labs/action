@@ -34,6 +34,7 @@ export type SnapshotDetails = {
   snapshotIdUrl: string
   expiresAt: string
   agentUrl: string
+  editorUrl: string
   /**
    * Absent when the CLI or Studio predates it, like the one below.
    */
@@ -78,7 +79,8 @@ export async function runSnapshot({ workingDirectory, config, token }: { working
     .split(/\r?\n/)
     .find((line) => line.startsWith('{'))
 
-  return JSON.parse(json ?? stdout.trim()) as SnapshotDetails
+  const snapshot = JSON.parse(json ?? stdout.trim()) as Omit<SnapshotDetails, 'editorUrl'> & { editorUrl?: string }
+  return { ...snapshot, editorUrl: snapshot.editorUrl ?? `${snapshot.agentUrl.replace(/\/$/, '')}/editor` }
 }
 
 /**

@@ -63,6 +63,7 @@ export async function run(): Promise<void> {
   core.setOutput('tarball-url', snapshot.url)
   core.setOutput('integrity', snapshot.integrity)
   core.setOutput('agent-url', snapshot.agentUrl)
+  core.setOutput('editor-url', snapshot.editorUrl)
   core.setOutput('files-added', String(snapshot.changes?.added.length ?? 0))
   core.setOutput('files-changed', String(snapshot.changes?.changed.length ?? 0))
   core.setOutput('files-removed', String(snapshot.changes?.removed.length ?? 0))

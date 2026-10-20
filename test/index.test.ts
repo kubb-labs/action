@@ -49,6 +49,7 @@ const snapshot = {
   snapshotIdUrl: 'https://kubb.studio/packages/snap-1/snapshot.tgz',
   expiresAt: '2026-01-08T00:00:00.000Z',
   agentUrl: 'https://kubb.studio/agents/brave-otter',
+  editorUrl: 'https://kubb.studio/agents/brave-otter/editor',
 }
 
 vi.mock('../src/utils/cli.js', () => ({ runSnapshot: vi.fn().mockResolvedValue(snapshot), releaseAgent: vi.fn().mockResolvedValue(true) }))
@@ -106,6 +107,7 @@ describe('run', () => {
 
     expect(outputs['tarball-url']).toBe(snapshot.url)
     expect(outputs['agent-url']).toBe(snapshot.agentUrl)
+    expect(outputs['editor-url']).toBe(snapshot.editorUrl)
     expect(outputs['files-added']).toBe('0')
     expect(outputs['files-changed']).toBe('0')
     expect(outputs['files-removed']).toBe('0')

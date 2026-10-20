@@ -46,8 +46,9 @@ The repository needs `KUBB_TOKEN` in Actions secrets: an organization CI API key
 To let the action open the init pull request, turn on Allow GitHub Actions to create and approve
 pull requests under Settings > Actions > General.
 
-The pull-request comment links to the generated package and its Studio agent, so reviewers can
-install and inspect the result without recreating the workflow locally. Below the install line it
+The pull-request comment links to the generated package and its read-only Studio editor, so reviewers
+can inspect files, comment on lines, and preview `docs.html` after the runner exits. The `editor-url`
+output exposes the same link. Below the install line it
 shows what changed in the generated files, each with a collapsed file list:
 
 | Section                                 | Compared with                                         | Needs                                            |
