@@ -1,5 +1,11 @@
 # @kubb-labs/action
 
+## 0.5.3
+
+### Patch Changes
+
+- 3a77750: Link pull-request snapshots directly to the read-only Studio editor and expose the URL through `editor-url`.
+
 ## 0.5.2
 
 ### Patch Changes
