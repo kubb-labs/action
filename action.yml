@@ -33,6 +33,8 @@ outputs:
     description: SHA-512 integrity of the generated tarball
   agent-url:
     description: Kubb Studio agent URL
+  editor-url:
+    description: Read-only Studio editor for the published CI output
   files-added:
     description: Number of generated files added since the previous snapshot on this pull request
   files-changed:

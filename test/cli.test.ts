@@ -66,7 +66,7 @@ describe('runSnapshot', () => {
 
     const snapshot = await runSnapshot({ workingDirectory: project, config: '/repo/kubb.config.ts', token: 'ci-token' })
 
-    expect(snapshot).toMatchObject({ id: 'snap-1', name: '@kubb/demo' })
+    expect(snapshot).toMatchObject({ id: 'snap-1', name: '@kubb/demo', editorUrl: 'https://kubb.studio/agents/brave-otter/editor' })
     const [command, args, env] = vi.mocked(captureCommand).mock.calls[0]!
     expect(command).toBe(path.join(project, 'node_modules', '.bin', 'kubb'))
     // No --id: the CLI detects the CI agent identity from the environment on its own.

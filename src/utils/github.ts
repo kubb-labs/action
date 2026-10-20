@@ -137,7 +137,7 @@ export async function updateComment(snapshot: SnapshotDetails, token: string): P
     ...renderBranchChanges(snapshot.branchChanges, owner, repo),
     ...renderChanges(snapshot.changes, owner, repo),
     '',
-    `[Download package](${snapshot.url}) · [Studio agent](${snapshot.agentUrl})`,
+    `[Download package](${snapshot.url}) · [Open editor](${snapshot.editorUrl})`,
     '',
     `<sub>Expires ${snapshot.expiresAt ? day(snapshot.expiresAt) : 'soon'} · ${commitFooter(owner, repo)}</sub>`,
   ].join('\n')

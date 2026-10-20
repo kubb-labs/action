@@ -88,6 +88,7 @@ const snapshot = {
   snapshotIdUrl: 'https://kubb.studio/packages/snap-1/snapshot.tgz',
   expiresAt: '2026-01-08T00:00:00.000Z',
   agentUrl: 'https://kubb.studio/agents/brave-otter',
+  editorUrl: 'https://kubb.studio/agents/brave-otter/editor',
 }
 
 test('does nothing off a pull request, where there is no comment to update', async () => {
@@ -104,6 +105,7 @@ test('creates the comment on the first snapshot, with no changes block', async (
   expect(createIssueComment).toHaveBeenCalledOnce()
   const body = createIssueComment.mock.calls[0]![0].body as string
   expect(body).toContain('npm i https://kubb.studio/packages/brave-otter/%40acme%2Fapi.tgz')
+  expect(body).toContain('[Open editor](https://kubb.studio/agents/brave-otter/editor)')
   expect(body).not.toContain('Changes since')
   expect(body).not.toContain('First snapshot')
 })
