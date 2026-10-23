@@ -69,6 +69,10 @@ without a push. When a snapshot fails, the comment shows the error and links the
 The action runs `kubb studio snapshot` from the repository's own `node_modules/.bin/kubb` when one
 exists, so it uses the same Kubb version the repository's config and plugins are built against.
 When a repository has no local install, it falls back to
-`npx --package @kubb/cli@^5.6.1 --package @kubb/studio@^5.6.1 kubb studio snapshot`. A local
-install must be Kubb 5.6.2 or later. Studio rejects versions before 5.6.1, and
+`npx --package @kubb/cli@^5.6.1 --package @kubb/studio@^5.6.1 --package tsdown@^0.23.1 kubb studio snapshot`.
+A local install must be Kubb 5.6.2 or later. Studio rejects versions before 5.6.1, and
 `kubb studio snapshot` in 5.6.1 fails on a config that does not set `storage`.
+
+A snapshot builds its `dist` files with `tsdown`. Newer Kubb versions no longer install it, so a
+repository with a local Kubb install also needs `tsdown` in its development dependencies:
+`npm i -D tsdown`. Without it, the snapshot step fails with an error that says so.
