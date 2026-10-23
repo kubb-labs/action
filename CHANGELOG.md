@@ -1,5 +1,11 @@
 # @kubb-labs/action
 
+## 0.5.4
+
+### Patch Changes
+
+- fe035ef: Install `tsdown` with `@kubb/cli` and `@kubb/studio` when the action falls back to `npx`. Newer `@kubb/studio` versions no longer install `tsdown`, which `kubb studio snapshot` needs.
+
 ## 0.5.3
 
 ### Patch Changes
