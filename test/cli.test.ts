@@ -42,7 +42,7 @@ describe('resolveKubbBinary', () => {
 
     expect(resolveKubbBinary(project)).toEqual({
       command: 'npx',
-      args: ['--yes', '--package', '@kubb/cli@^5.14.0', '--package', '@kubb/studio@^5.14.0', '--package', 'tsdown@^0.23.1', 'kubb'],
+      args: ['--yes', '--package', '@kubb/cli@^5.14.5', '--package', '@kubb/studio@^5.14.5', '--package', 'tsdown@^0.23.1', 'kubb'],
     })
   })
 })
