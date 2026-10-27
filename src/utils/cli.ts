@@ -66,10 +66,25 @@ export function resolveKubbBinary(workingDirectory: string): { command: string; 
  * URL through its `--url` option, and detects the CI agent identity from the environment on its
  * own, the same way it does for every CI provider it supports.
  */
-export async function runSnapshot({ workingDirectory, config, token }: { workingDirectory: string; config: string; token: string }): Promise<SnapshotDetails> {
+export async function runSnapshot({
+  workingDirectory,
+  config,
+  token,
+  packageName,
+  packageVersion,
+}: {
+  workingDirectory: string
+  config: string
+  token: string
+  /** Overrides the name in package.json. */
+  packageName?: string
+  /** Overrides the version in package.json. */
+  packageVersion?: string
+}): Promise<SnapshotDetails> {
   const { command, args } = resolveKubbBinary(workingDirectory)
   console.info(`Kubb Studio snapshot: binary=${command}, url=${studioUrl}`)
-  const stdout = await captureCommand(command, [...args, 'studio', 'snapshot', '--json', '--config', config, '--url', studioUrl], {
+  const overrides = [...(packageName ? ['--name', packageName] : []), ...(packageVersion ? ['--package-version', packageVersion] : [])]
+  const stdout = await captureCommand(command, [...args, 'studio', 'snapshot', '--json', '--config', config, '--url', studioUrl, ...overrides], {
     ...process.env,
     KUBB_TOKEN: token,
   })

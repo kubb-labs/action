@@ -37,7 +37,15 @@ export async function run(): Promise<void> {
   }
 
   const snapshot = await core
-    .group('Kubb Studio snapshot', () => runSnapshot({ workingDirectory: process.cwd(), config, token: apiKey }))
+    .group('Kubb Studio snapshot', () =>
+      runSnapshot({
+        workingDirectory: process.cwd(),
+        config,
+        token: apiKey,
+        packageName: core.getInput('package-name') || undefined,
+        packageVersion: core.getInput('package-version') || undefined,
+      }),
+    )
     .catch(async (error: unknown) => {
       const message = (error instanceof Error ? error.message : String(error)).replaceAll(apiKey, '***')
       // Best effort: a failed comment must not hide the snapshot failure itself.
