@@ -75,6 +75,40 @@ describe('runSnapshot', () => {
     expect(info).toHaveBeenCalledWith(`Kubb Studio snapshot: binary=${command}, url=https://kubb.studio`)
   })
 
+  it('passes the package name and version overrides to the CLI', async () => {
+    const project = makeProject(true)
+    vi.spyOn(console, 'info').mockImplementation(() => {})
+    vi.mocked(captureCommand).mockResolvedValue(
+      JSON.stringify({
+        id: 'snap-1',
+        name: '@acme/api',
+        version: '2.0.0-pr.12',
+        integrity: 'sha512-abc',
+        url: 'https://kubb.studio/packages/demo.tgz',
+        snapshotIdUrl: 'https://kubb.studio/packages/snap-1/snapshot.tgz',
+        expiresAt: '2026-01-08T00:00:00.000Z',
+        agentUrl: 'https://kubb.studio/agents/brave-otter',
+      }),
+    )
+
+    await runSnapshot({ workingDirectory: project, config: '/repo/kubb.config.ts', token: 'ci-token', packageName: '@acme/api', packageVersion: '2.0.0-pr.12' })
+
+    const [, args] = vi.mocked(captureCommand).mock.calls[0]!
+    expect(args).toEqual([
+      'studio',
+      'snapshot',
+      '--json',
+      '--config',
+      '/repo/kubb.config.ts',
+      '--url',
+      'https://kubb.studio',
+      '--name',
+      '@acme/api',
+      '--package-version',
+      '2.0.0-pr.12',
+    ])
+  })
+
   it('passes the changes the CLI reports through untouched', async () => {
     const project = makeProject(true)
     vi.spyOn(console, 'info').mockImplementation(() => {})

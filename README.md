@@ -43,6 +43,16 @@ The repository needs `KUBB_TOKEN` in Actions secrets: an organization CI API key
 `x-api-key`. Set `KUBB_STUDIO_URL` only for a self-hosted Studio deployment; the default is
 `https://kubb.studio`.
 
+The snapshot takes its package name and version from `package.json`. Set `package-name` or
+`package-version` to override them, for example to tag each pull request's snapshot:
+
+```yaml
+- uses: kubb-labs/action@v0
+  with:
+    token: ${{ secrets.KUBB_TOKEN }}
+    package-version: 0.0.0-pr.${{ github.event.pull_request.number }}
+```
+
 To let the action open the init pull request, turn on Allow GitHub Actions to create and approve
 pull requests under Settings > Actions > General.
 
