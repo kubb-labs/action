@@ -1,5 +1,11 @@
 # @kubb-labs/action
 
+## 0.6.0
+
+### Minor Changes
+
+- 39da4b7: Add `package-name` and `package-version` inputs to override the snapshot's package name and version from `package.json`.
+
 ## 0.5.6
 
 ### Patch Changes
