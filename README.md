@@ -4,6 +4,9 @@
   </a>
 </div>
 
+> [!IMPORTANT]
+> **We are looking for maintainers.** Want to help shape Kubb? Email [kubb@kubb.dev](mailto:kubb@kubb.dev) or chat with us on [Discord](https://discord.gg/shfBFeczrm).
+
 # Kubb GitHub Action
 
 The Kubb GitHub Action generates a package snapshot from CI and publishes it to Kubb Studio. It
