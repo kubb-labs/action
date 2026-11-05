@@ -1,5 +1,11 @@
 # @kubb-labs/action
 
+## 0.6.1
+
+### Patch Changes
+
+- a9960c6: Use Kubb 5.15.4 when the action falls back to `npx`.
+
 ## 0.6.0
 
 ### Minor Changes
