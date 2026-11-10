@@ -4,7 +4,7 @@ import { delimiter, resolve } from 'node:path'
 import Module from 'node:module'
 import { fileURLToPath } from 'node:url'
 import { initConfig, updateComment, updateFailureComment } from './utils/github.js'
-import { releaseAgent, runSnapshot } from './utils/cli.js'
+import { releaseProject, runSnapshot } from './utils/cli.js'
 
 export async function run(): Promise<void> {
   if (context.payload.pull_request?.head?.repo?.fork) {
@@ -15,10 +15,12 @@ export async function run(): Promise<void> {
     const apiKey = core.getInput('token', { required: true })
     core.setSecret(apiKey)
     // Best effort: a failed cleanup must not fail the closed pull request's workflow. The nightly
-    // idle cleanup in Studio removes the agent later anyway.
-    await releaseAgent({ token: apiKey, prNumber: context.payload.pull_request.number })
-      .then((deleted) => core.info(deleted ? 'Deleted the Kubb Studio agent of this pull request.' : 'No Kubb Studio agent to delete for this pull request.'))
-      .catch((error: unknown) => core.warning(`Could not delete the Kubb Studio agent: ${String(error)}`))
+    // idle cleanup in Studio removes the project later anyway.
+    await releaseProject({ token: apiKey, prNumber: context.payload.pull_request.number })
+      .then((deleted) =>
+        core.info(deleted ? 'Deleted the Kubb Studio project of this pull request.' : 'No Kubb Studio project to delete for this pull request.'),
+      )
+      .catch((error: unknown) => core.warning(`Could not delete the Kubb Studio project: ${String(error)}`))
     return
   }
   process.chdir(resolve(process.cwd(), core.getInput('working-directory') || '.'))
@@ -60,7 +62,7 @@ export async function run(): Promise<void> {
       'Snapshot published',
       `  Package: ${snapshot.name ?? '(unnamed)'}@${snapshot.version ?? '0.0.0'}`,
       `  Tarball: ${snapshot.url}`,
-      `  Agent: ${snapshot.agentUrl}`,
+      `  Project: ${snapshot.projectUrl}`,
       `  Expires: ${snapshot.expiresAt}`,
     ].join('\n'),
   )
@@ -70,7 +72,7 @@ export async function run(): Promise<void> {
   core.setOutput('package-version', snapshot.version)
   core.setOutput('tarball-url', snapshot.url)
   core.setOutput('integrity', snapshot.integrity)
-  core.setOutput('agent-url', snapshot.agentUrl)
+  core.setOutput('project-url', snapshot.projectUrl)
   core.setOutput('editor-url', snapshot.editorUrl)
   core.setOutput('files-added', String(snapshot.changes?.added.length ?? 0))
   core.setOutput('files-changed', String(snapshot.changes?.changed.length ?? 0))

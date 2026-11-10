@@ -48,14 +48,14 @@ const snapshot = {
   url: 'https://kubb.studio/packages/brave-otter/%40acme%2Fapi.tgz',
   snapshotIdUrl: 'https://kubb.studio/packages/snap-1/snapshot.tgz',
   expiresAt: '2026-01-08T00:00:00.000Z',
-  agentUrl: 'https://kubb.studio/agents/brave-otter',
-  editorUrl: 'https://kubb.studio/agents/brave-otter/editor',
+  projectUrl: 'https://kubb.studio/projects/brave-otter',
+  editorUrl: 'https://kubb.studio/projects/brave-otter/editor',
 }
 
-vi.mock('../src/utils/cli.js', () => ({ runSnapshot: vi.fn().mockResolvedValue(snapshot), releaseAgent: vi.fn().mockResolvedValue(true) }))
+vi.mock('../src/utils/cli.js', () => ({ runSnapshot: vi.fn().mockResolvedValue(snapshot), releaseProject: vi.fn().mockResolvedValue(true) }))
 
 const { initConfig, updateComment, updateFailureComment } = await import('../src/utils/github.js')
-const { runSnapshot, releaseAgent } = await import('../src/utils/cli.js')
+const { runSnapshot, releaseProject } = await import('../src/utils/cli.js')
 const { run } = await import('../src/index.js')
 
 beforeEach(() => {
@@ -77,25 +77,25 @@ describe('run', () => {
     expect(runSnapshot).not.toHaveBeenCalled()
   })
 
-  it('deletes the pull request agent instead of running a snapshot when the pull request closes', async () => {
+  it('deletes the pull request project instead of running a snapshot when the pull request closes', async () => {
     payload.action = 'closed'
 
     await run()
 
-    expect(releaseAgent).toHaveBeenCalledWith({ token: 'ci-token', prNumber: 42 })
+    expect(releaseProject).toHaveBeenCalledWith({ token: 'ci-token', prNumber: 42 })
     expect(runSnapshot).not.toHaveBeenCalled()
     expect(setFailed).not.toHaveBeenCalled()
   })
 
-  it('does not fail the workflow when deleting the agent fails', async () => {
+  it('does not fail the workflow when deleting the project fails', async () => {
     payload.action = 'closed'
-    vi.mocked(releaseAgent).mockRejectedValueOnce(new Error('boom'))
+    vi.mocked(releaseProject).mockRejectedValueOnce(new Error('boom'))
 
     await expect(run()).resolves.toBeUndefined()
     expect(runSnapshot).not.toHaveBeenCalled()
   })
 
-  it('lets the CLI detect the CI agent identity, instead of passing an id itself', async () => {
+  it('lets the CLI detect the CI project identity, instead of passing an id itself', async () => {
     await run()
 
     expect(vi.mocked(runSnapshot)).toHaveBeenCalledWith(expect.objectContaining({ token: 'ci-token' }))
@@ -106,7 +106,7 @@ describe('run', () => {
     await run()
 
     expect(outputs['tarball-url']).toBe(snapshot.url)
-    expect(outputs['agent-url']).toBe(snapshot.agentUrl)
+    expect(outputs['project-url']).toBe(snapshot.projectUrl)
     expect(outputs['editor-url']).toBe(snapshot.editorUrl)
     expect(outputs['files-added']).toBe('0')
     expect(outputs['files-changed']).toBe('0')

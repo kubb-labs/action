@@ -17,8 +17,8 @@ export type SnapshotChanges = {
 
 /**
  * `SnapshotChanges` against the pull request's base branch. `baseFound` tells apart the two reasons
- * `base` can be `null`: `false` when no CI agent is registered for the branch yet (the workflow has
- * never run there), `true` when that agent exists but has no snapshot of this package to compare with.
+ * `base` can be `null`: `false` when no CI project is registered for the branch yet (the workflow has
+ * never run there), `true` when that project exists but has no snapshot of this package to compare with.
  */
 export type BranchSnapshotChanges = SnapshotChanges & { branch: string; baseFound: boolean }
 
@@ -33,7 +33,7 @@ export type SnapshotDetails = {
   url: string
   snapshotIdUrl: string
   expiresAt: string
-  agentUrl: string
+  projectUrl: string
   editorUrl: string
   /**
    * Absent when the CLI or Studio predates it, like the one below.
@@ -63,7 +63,7 @@ export function resolveKubbBinary(workingDirectory: string): { command: string; 
  * Runs `kubb studio snapshot --json` and returns the parsed snapshot.
  *
  * The CI API key travels through the child's environment, never argv. The CLI accepts the Studio
- * URL through its `--url` option, and detects the CI agent identity from the environment on its
+ * URL through its `--url` option, and detects the CI project identity from the environment on its
  * own, the same way it does for every CI provider it supports.
  */
 export async function runSnapshot({
@@ -94,33 +94,41 @@ export async function runSnapshot({
     .split(/\r?\n/)
     .find((line) => line.startsWith('{'))
 
-  const snapshot = JSON.parse(json ?? stdout.trim()) as Omit<SnapshotDetails, 'editorUrl'> & { editorUrl?: string }
-  return { ...snapshot, editorUrl: snapshot.editorUrl ?? `${snapshot.agentUrl.replace(/\/$/, '')}/editor` }
+  const { agentUrl, ...snapshot } = JSON.parse(json ?? stdout.trim()) as Omit<SnapshotDetails, 'editorUrl' | 'projectUrl'> & {
+    editorUrl?: string
+    projectUrl?: string
+    agentUrl?: string
+  }
+  // Older Kubb CLI versions print `agentUrl` instead of `projectUrl`.
+  const projectUrl = snapshot.projectUrl ?? agentUrl
+  if (!projectUrl) throw new Error('kubb studio snapshot printed no project URL')
+
+  return { ...snapshot, projectUrl, editorUrl: snapshot.editorUrl ?? `${projectUrl.replace(/\/$/, '')}/editor` }
 }
 
 /**
- * Machine token of a pull request's CI agent. It repeats the identity `kubb studio snapshot`
- * derives on GitHub (`gh:<repositoryId>:<prNumber>`, hashed with SHA-256), so both name one agent.
+ * Machine token of a pull request's CI project. It repeats the identity `kubb studio snapshot`
+ * derives on GitHub (`gh:<repositoryId>:<prNumber>`, hashed with SHA-256), so both name one project.
  */
 export function pullRequestMachineToken(prNumber: number, env: Record<string, string | undefined> = process.env): string {
   return hash('sha256', `gh:${env.GITHUB_REPOSITORY_ID ?? env.GITHUB_REPOSITORY ?? ''}:${prNumber}`)
 }
 
 /**
- * Deletes the pull request's CI agent from Studio (`DELETE /api/agents`).
+ * Deletes the pull request's CI project from Studio (`DELETE /api/projects`).
  *
- * Returns `false` when Studio has no such agent, like a pull request that never ran the workflow
+ * Returns `false` when Studio has no such project, like a pull request that never ran the workflow
  * or one cleaned up already. The CI API key goes in `x-api-key`, never in the URL.
  */
-export async function releaseAgent({ token, prNumber }: { token: string; prNumber: number }): Promise<boolean> {
-  const response = await fetch(`${studioUrl}/api/agents`, {
+export async function releaseProject({ token, prNumber }: { token: string; prNumber: number }): Promise<boolean> {
+  const response = await fetch(`${studioUrl}/api/projects`, {
     method: 'DELETE',
     headers: { 'content-type': 'application/json', 'x-api-key': token },
     body: JSON.stringify({ machineToken: pullRequestMachineToken(prNumber) }),
   })
 
   if (response.status === 404) return false
-  if (!response.ok) throw new Error(`Kubb Studio could not delete the agent (HTTP ${response.status})`)
+  if (!response.ok) throw new Error(`Kubb Studio could not delete the project (HTTP ${response.status})`)
 
   return true
 }

@@ -7,7 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 vi.mock('../src/utils/process.js', () => ({ captureCommand: vi.fn() }))
 
 const { captureCommand } = await import('../src/utils/process.js')
-const { pullRequestMachineToken, releaseAgent, resolveKubbBinary, runSnapshot } = await import('../src/utils/cli.js')
+const { pullRequestMachineToken, releaseProject, resolveKubbBinary, runSnapshot } = await import('../src/utils/cli.js')
 
 const tempDirs: Array<string> = []
 
@@ -60,16 +60,16 @@ describe('runSnapshot', () => {
         url: 'https://kubb.studio/packages/demo.tgz',
         snapshotIdUrl: 'https://kubb.studio/packages/snap-1/snapshot.tgz',
         expiresAt: '2026-01-08T00:00:00.000Z',
-        agentUrl: 'https://kubb.studio/agents/brave-otter',
+        projectUrl: 'https://kubb.studio/projects/brave-otter',
       })}\n[four-walls-vanish] Disconnected from Studio\n`,
     )
 
     const snapshot = await runSnapshot({ workingDirectory: project, config: '/repo/kubb.config.ts', token: 'ci-token' })
 
-    expect(snapshot).toMatchObject({ id: 'snap-1', name: '@kubb/demo', editorUrl: 'https://kubb.studio/agents/brave-otter/editor' })
+    expect(snapshot).toMatchObject({ id: 'snap-1', name: '@kubb/demo', editorUrl: 'https://kubb.studio/projects/brave-otter/editor' })
     const [command, args, env] = vi.mocked(captureCommand).mock.calls[0]!
     expect(command).toBe(path.join(project, 'node_modules', '.bin', 'kubb'))
-    // No --id: the CLI detects the CI agent identity from the environment on its own.
+    // No --id: the CLI detects the CI project identity from the environment on its own.
     expect(args).toEqual(['studio', 'snapshot', '--json', '--config', '/repo/kubb.config.ts', '--url', 'https://kubb.studio'])
     expect(env?.KUBB_TOKEN).toBe('ci-token')
     expect(info).toHaveBeenCalledWith(`Kubb Studio snapshot: binary=${command}, url=https://kubb.studio`)
@@ -87,7 +87,7 @@ describe('runSnapshot', () => {
         url: 'https://kubb.studio/packages/demo.tgz',
         snapshotIdUrl: 'https://kubb.studio/packages/snap-1/snapshot.tgz',
         expiresAt: '2026-01-08T00:00:00.000Z',
-        agentUrl: 'https://kubb.studio/agents/brave-otter',
+        projectUrl: 'https://kubb.studio/projects/brave-otter',
       }),
     )
 
@@ -127,7 +127,7 @@ describe('runSnapshot', () => {
         url: 'https://kubb.studio/packages/demo.tgz',
         snapshotIdUrl: 'https://kubb.studio/packages/snap-1/snapshot.tgz',
         expiresAt: '2026-01-08T00:00:00.000Z',
-        agentUrl: 'https://kubb.studio/agents/brave-otter',
+        projectUrl: 'https://kubb.studio/projects/brave-otter',
         changes,
       }),
     )
@@ -135,6 +135,28 @@ describe('runSnapshot', () => {
     const snapshot = await runSnapshot({ workingDirectory: project, config: '/repo/kubb.config.ts', token: 'ci-token' })
 
     expect(snapshot.changes).toEqual(changes)
+  })
+
+  it('reads agentUrl as the project URL when an older Kubb CLI prints it', async () => {
+    const project = makeProject(true)
+    vi.mocked(captureCommand).mockResolvedValue(
+      JSON.stringify({
+        id: 'snap-1',
+        name: '@kubb/demo',
+        version: '1.0.0',
+        integrity: 'sha512-abc',
+        url: 'https://kubb.studio/packages/demo.tgz',
+        snapshotIdUrl: 'https://kubb.studio/packages/snap-1/snapshot.tgz',
+        expiresAt: '2026-01-08T00:00:00.000Z',
+        agentUrl: 'https://kubb.studio/agents/brave-otter',
+      }),
+    )
+
+    const snapshot = await runSnapshot({ workingDirectory: project, config: '/repo/kubb.config.ts', token: 'ci-token' })
+
+    expect(snapshot.projectUrl).toBe('https://kubb.studio/agents/brave-otter')
+    expect(snapshot.editorUrl).toBe('https://kubb.studio/agents/brave-otter/editor')
+    expect(snapshot).not.toHaveProperty('agentUrl')
   })
 })
 
@@ -150,7 +172,7 @@ describe('pullRequestMachineToken', () => {
   })
 })
 
-describe('releaseAgent', () => {
+describe('releaseProject', () => {
   const fetchMock = vi.fn()
 
   beforeEach(() => vi.stubGlobal('fetch', fetchMock))
@@ -159,24 +181,24 @@ describe('releaseAgent', () => {
   it('sends the machine token with the CI key in a header', async () => {
     fetchMock.mockResolvedValue(new Response(null, { status: 200 }))
 
-    await expect(releaseAgent({ token: 'ci-token', prNumber: 42 })).resolves.toBe(true)
+    await expect(releaseProject({ token: 'ci-token', prNumber: 42 })).resolves.toBe(true)
 
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit]
-    expect(url).toMatch(/\/api\/agents$/)
+    expect(url).toMatch(/\/api\/projects$/)
     expect(init.method).toBe('DELETE')
     expect(init.headers).toMatchObject({ 'x-api-key': 'ci-token' })
     expect(JSON.parse(init.body as string)).toEqual({ machineToken: pullRequestMachineToken(42) })
   })
 
-  it('returns false when Studio has no such agent', async () => {
+  it('returns false when Studio has no such project', async () => {
     fetchMock.mockResolvedValue(new Response(null, { status: 404 }))
 
-    await expect(releaseAgent({ token: 'ci-token', prNumber: 42 })).resolves.toBe(false)
+    await expect(releaseProject({ token: 'ci-token', prNumber: 42 })).resolves.toBe(false)
   })
 
   it('throws on any other failure without echoing the key', async () => {
     fetchMock.mockResolvedValue(new Response(null, { status: 500 }))
 
-    await expect(releaseAgent({ token: 'ci-token', prNumber: 42 })).rejects.toThrow('HTTP 500')
+    await expect(releaseProject({ token: 'ci-token', prNumber: 42 })).rejects.toThrow('HTTP 500')
   })
 })

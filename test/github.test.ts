@@ -87,8 +87,8 @@ const snapshot = {
   url: 'https://kubb.studio/packages/brave-otter/%40acme%2Fapi.tgz',
   snapshotIdUrl: 'https://kubb.studio/packages/snap-1/snapshot.tgz',
   expiresAt: '2026-01-08T00:00:00.000Z',
-  agentUrl: 'https://kubb.studio/agents/brave-otter',
-  editorUrl: 'https://kubb.studio/agents/brave-otter/editor',
+  projectUrl: 'https://kubb.studio/projects/brave-otter',
+  editorUrl: 'https://kubb.studio/projects/brave-otter/editor',
 }
 
 test('does nothing off a pull request, where there is no comment to update', async () => {
@@ -105,7 +105,7 @@ test('creates the comment on the first snapshot, with no changes block', async (
   expect(createIssueComment).toHaveBeenCalledOnce()
   const body = createIssueComment.mock.calls[0]![0].body as string
   expect(body).toContain('npm i https://kubb.studio/packages/brave-otter/%40acme%2Fapi.tgz')
-  expect(body).toContain('[Open editor](https://kubb.studio/agents/brave-otter/editor)')
+  expect(body).toContain('[Open editor](https://kubb.studio/projects/brave-otter/editor)')
   expect(body).not.toContain('Changes since')
   expect(body).not.toContain('First snapshot')
 })
@@ -218,13 +218,13 @@ test('says when the pull request changes nothing against the base branch', async
   expect(commentBody()).not.toContain('<details>')
 })
 
-test('says how to get a base branch snapshot when no agent has run there yet', async () => {
+test('says how to get a base branch snapshot when no project has run there yet', async () => {
   await updateComment({ ...snapshot, branchChanges: { branch: 'main', base: null, added: [], changed: [], removed: [], baseFound: false } }, 'gh-token')
 
   expect(commentBody()).toContain('**No snapshot of `main` to compare with yet.** Run this workflow on pushes to `main` to compare pull requests with it.')
 })
 
-test('says the package is new to the base branch when its agent exists but has no snapshot yet', async () => {
+test('says the package is new to the base branch when its project exists but has no snapshot yet', async () => {
   await updateComment({ ...snapshot, branchChanges: { branch: 'main', base: null, added: [], changed: [], removed: [], baseFound: true } }, 'gh-token')
 
   expect(commentBody()).toContain('**No snapshot of `main` for this package yet.**')

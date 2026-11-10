@@ -10,7 +10,7 @@
 # Kubb GitHub Action
 
 The Kubb GitHub Action generates a package snapshot from CI and publishes it to Kubb Studio. It
-reuses one CI agent per pull request, updates one pull-request comment, and skips fork pull
+reuses one CI project per pull request, updates one pull-request comment, and skips fork pull
 requests because their secrets are unavailable.
 
 It runs `kubb studio snapshot`, the same command any CI can run directly (GitLab, Bitbucket,
@@ -22,7 +22,7 @@ name: Kubb snapshot
 
 on:
   pull_request:
-    # `closed` deletes the pull request's Studio agent. GitHub leaves it out by default.
+    # `closed` deletes the pull request's Studio project. GitHub leaves it out by default.
     types: [opened, synchronize, reopened, closed]
   # Snapshots of main are what pull requests compare with.
   push:
@@ -37,7 +37,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - uses: kubb-labs/action@v0
+      - uses: kubb-labs/action@v1
         with:
           token: ${{ secrets.KUBB_TOKEN }}
 ```
@@ -50,7 +50,7 @@ The snapshot takes its package name and version from `package.json`. Set `packag
 `package-version` to override them, for example to tag each pull request's snapshot:
 
 ```yaml
-- uses: kubb-labs/action@v0
+- uses: kubb-labs/action@v1
   with:
     token: ${{ secrets.KUBB_TOKEN }}
     package-version: 0.0.0-pr.${{ github.event.pull_request.number }}
@@ -69,8 +69,8 @@ shows what changed in the generated files, each with a collapsed file list:
 | **Changes against `main`**              | The latest snapshot of the pull request's base branch | The workflow running on pushes to that branch    |
 | **Changes since the previous snapshot** | The previous snapshot on the same pull request        | Nothing: the first push reports a first snapshot |
 
-When a pull request closes, the action deletes its Studio agent. If that fails, it logs a warning
-and Studio's idle cleanup removes the agent later.
+When a pull request closes, the action deletes its Studio project. If that fails, it logs a warning
+and Studio's idle cleanup removes the project later.
 
 Snapshots expire after a week, so add a `schedule` trigger if the base branch can go a week
 without a push. When a snapshot fails, the comment shows the error and links the run. See the
