@@ -107,6 +107,7 @@ describe('run', () => {
 
     expect(outputs['tarball-url']).toBe(snapshot.url)
     expect(outputs['project-url']).toBe(snapshot.projectUrl)
+    expect(outputs['agent-url']).toBe(snapshot.projectUrl)
     expect(outputs['editor-url']).toBe(snapshot.editorUrl)
     expect(outputs['files-added']).toBe('0')
     expect(outputs['files-changed']).toBe('0')

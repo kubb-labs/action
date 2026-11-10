@@ -73,6 +73,8 @@ export async function run(): Promise<void> {
   core.setOutput('tarball-url', snapshot.url)
   core.setOutput('integrity', snapshot.integrity)
   core.setOutput('project-url', snapshot.projectUrl)
+  // Kept for workflows written before the output was renamed.
+  core.setOutput('agent-url', snapshot.projectUrl)
   core.setOutput('editor-url', snapshot.editorUrl)
   core.setOutput('files-added', String(snapshot.changes?.added.length ?? 0))
   core.setOutput('files-changed', String(snapshot.changes?.changed.length ?? 0))

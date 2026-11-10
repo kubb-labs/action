@@ -37,7 +37,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - uses: kubb-labs/action@v1
+      - uses: kubb-labs/action@v0
         with:
           token: ${{ secrets.KUBB_TOKEN }}
 ```
@@ -50,7 +50,7 @@ The snapshot takes its package name and version from `package.json`. Set `packag
 `package-version` to override them, for example to tag each pull request's snapshot:
 
 ```yaml
-- uses: kubb-labs/action@v1
+- uses: kubb-labs/action@v0
   with:
     token: ${{ secrets.KUBB_TOKEN }}
     package-version: 0.0.0-pr.${{ github.event.pull_request.number }}

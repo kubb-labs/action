@@ -39,6 +39,8 @@ outputs:
     description: SHA-512 integrity of the generated tarball
   project-url:
     description: Kubb Studio project URL
+  agent-url:
+    description: Same as project-url. Kept for workflows written before the rename
   editor-url:
     description: Read-only Studio editor for the published CI output
   files-added:
