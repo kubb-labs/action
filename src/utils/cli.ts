@@ -96,6 +96,7 @@ export async function runSnapshot({
 
   const { agentUrl, ...snapshot } = JSON.parse(json ?? stdout.trim()) as Omit<SnapshotDetails, 'editorUrl' | 'projectUrl'> & {
     editorUrl?: string
+    webUrl?: string
     projectUrl?: string
     agentUrl?: string
   }
@@ -103,7 +104,7 @@ export async function runSnapshot({
   const projectUrl = snapshot.projectUrl ?? agentUrl
   if (!projectUrl) throw new Error('kubb studio snapshot printed no project URL')
 
-  return { ...snapshot, projectUrl, editorUrl: snapshot.editorUrl ?? `${projectUrl.replace(/\/$/, '')}/editor` }
+  return { ...snapshot, projectUrl, editorUrl: snapshot.editorUrl ?? snapshot.webUrl ?? `${projectUrl.replace(/\/$/, '')}/editor` }
 }
 
 /**
