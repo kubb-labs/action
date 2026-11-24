@@ -68,3 +68,24 @@ jobs:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           build-script: 'build'
           pattern: './dist/**/*.{js,mjs,cjs}'
+
+  fallow:
+    name: Fallow
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      checks: write
+    if: github.actor != 'github-actions[bot]'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - uses: kubb-labs/config/.github/setup@e217b27ded147201622363f5bb58872f620d413c # main
+
+      # Fails the job when the pull request adds a finding. Older findings do not fail it.
+      - name: Audit changed code
+        uses: fallow-rs/fallow@003cc8af2be876b8b8d48cfe2b6b44a36ec95402 # v3.48.0
+        with:
+          command: audit
+          comment: true
