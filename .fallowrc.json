@@ -1,0 +1,9 @@
+{
+  "$schema": "./node_modules/fallow/schema.json",
+  "rules": {
+    // Off by default: an exported signature that uses a type its file does not export.
+    "private-type-leaks": "warn",
+    // A pull request that adds an import cycle fails.
+    "circular-dependencies": "error"
+  }
+}

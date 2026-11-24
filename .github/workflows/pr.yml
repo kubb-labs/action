@@ -89,3 +89,4 @@ jobs:
         with:
           command: audit
           comment: true
+          review-comments: true
