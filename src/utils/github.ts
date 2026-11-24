@@ -22,7 +22,7 @@ function commitLink(owner: string, repo: string, commit: string): string {
 /**
  * The commit this run builds: a pull request's head, not the merge commit `context.sha` points at.
  */
-export function headSha(): string {
+function headSha(): string {
   return (context.payload.pull_request?.head as { sha?: string } | undefined)?.sha ?? context.sha
 }
 
