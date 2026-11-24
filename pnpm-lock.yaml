@@ -197,7 +197,7 @@ importers:
         specifier: ^5.1.1
         version: 5.1.1(vitest@5.1.1)
       fallow:
-        specifier: ^3.46.0
+        specifier: 3.46.0
         version: 3.46.0
       oxfmt:
         specifier: ^0.78.0
