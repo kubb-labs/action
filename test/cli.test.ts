@@ -7,7 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 vi.mock('../src/utils/process.js', () => ({ captureCommand: vi.fn() }))
 
 const { captureCommand } = await import('../src/utils/process.js')
-const { pullRequestMachineToken, releaseAgent, resolveKubbBinary, runSnapshot } = await import('../src/utils/cli.js')
+const { publicApiUrl, pullRequestMachineToken, releaseAgent, resolveKubbBinary, runSnapshot } = await import('../src/utils/cli.js')
 
 const tempDirs: Array<string> = []
 
@@ -150,32 +150,84 @@ describe('pullRequestMachineToken', () => {
   })
 })
 
-describe('releaseAgent', () => {
+describe('publicApiUrl', () => {
   const fetchMock = vi.fn()
 
   beforeEach(() => vi.stubGlobal('fetch', fetchMock))
   afterEach(() => vi.unstubAllGlobals())
 
+  it('uses the public API origin Studio reports', async () => {
+    fetchMock.mockResolvedValue(Response.json({ apiUrl: 'https://api.kubb.studio' }))
+
+    await expect(publicApiUrl('/agents')).resolves.toBe('https://api.kubb.studio/v1/agents')
+    expect(fetchMock.mock.calls[0]![0]).toBe('https://kubb.studio/api/settings')
+  })
+
+  it.each([
+    ['no public API', () => Response.json({ apiUrl: null })],
+    ['an older Studio without the field', () => Response.json({ mcpUrl: null })],
+    ['a failed lookup', () => new Response('down', { status: 503 })],
+    ['a value that is not a URL', () => Response.json({ apiUrl: 'api' })],
+    ['a plaintext origin', () => Response.json({ apiUrl: 'http://api.example.com' })],
+  ])('falls back to /api with %s', async (_label, response) => {
+    fetchMock.mockResolvedValue(response())
+
+    await expect(publicApiUrl('/agents')).resolves.toBe('https://kubb.studio/api/agents')
+  })
+
+  it('falls back to /api when Studio cannot be reached', async () => {
+    fetchMock.mockRejectedValue(new TypeError('fetch failed'))
+
+    await expect(publicApiUrl('/agents')).resolves.toBe('https://kubb.studio/api/agents')
+  })
+})
+
+describe('releaseAgent', () => {
+  const fetchMock = vi.fn()
+  /** Studio without a public API, answering the delete with `status`. */
+  const studio = (status: number) =>
+    fetchMock.mockImplementation(async (url: string) => (url.endsWith('/api/settings') ? Response.json({ apiUrl: null }) : new Response(null, { status })))
+
+  beforeEach(() => vi.stubGlobal('fetch', fetchMock))
+  afterEach(() => vi.unstubAllGlobals())
+
   it('sends the machine token with the CI key in a header', async () => {
-    fetchMock.mockResolvedValue(new Response(null, { status: 200 }))
+    studio(200)
 
     await expect(releaseAgent({ token: 'ci-token', prNumber: 42 })).resolves.toBe(true)
 
-    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit]
+    const [url, init] = fetchMock.mock.calls[1] as [string, RequestInit]
     expect(url).toMatch(/\/api\/agents$/)
     expect(init.method).toBe('DELETE')
     expect(init.headers).toMatchObject({ 'x-api-key': 'ci-token' })
     expect(JSON.parse(init.body as string)).toEqual({ machineToken: pullRequestMachineToken(42) })
   })
 
+  it('deletes through the public API when Studio reports one', async () => {
+    fetchMock.mockImplementation(async (url: string) =>
+      url.endsWith('/api/settings') ? Response.json({ apiUrl: 'https://api.kubb.studio' }) : new Response(null, { status: 200 }),
+    )
+
+    await expect(releaseAgent({ token: 'ci-token', prNumber: 42 })).resolves.toBe(true)
+    expect(fetchMock.mock.calls[1]![0]).toBe('https://api.kubb.studio/v1/agents')
+  })
+
+  it('never sends the CI key to the settings lookup', async () => {
+    studio(200)
+
+    await releaseAgent({ token: 'ci-token', prNumber: 42 })
+
+    expect(JSON.stringify(fetchMock.mock.calls[0])).not.toContain('ci-token')
+  })
+
   it('returns false when Studio has no such agent', async () => {
-    fetchMock.mockResolvedValue(new Response(null, { status: 404 }))
+    studio(404)
 
     await expect(releaseAgent({ token: 'ci-token', prNumber: 42 })).resolves.toBe(false)
   })
 
   it('throws on any other failure without echoing the key', async () => {
-    fetchMock.mockResolvedValue(new Response(null, { status: 500 }))
+    studio(500)
 
     await expect(releaseAgent({ token: 'ci-token', prNumber: 42 })).rejects.toThrow('HTTP 500')
   })
