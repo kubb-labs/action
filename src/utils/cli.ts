@@ -107,13 +107,37 @@ export function pullRequestMachineToken(prNumber: number, env: Record<string, st
 }
 
 /**
- * Deletes the pull request's CI agent from Studio (`DELETE /api/agents`).
+ * Where an API key request goes. A Studio that serves the public API reports its origin as `apiUrl` in
+ * `GET /api/settings`, and the request goes to `{apiUrl}/v1{path}`. Without one, or when the lookup fails,
+ * it goes to `{studioUrl}/api{path}`, which takes the same keys.
+ */
+export async function publicApiUrl(path: string): Promise<string> {
+  const fallback = `${studioUrl}/api${path}`
+
+  try {
+    const response = await fetch(`${studioUrl}/api/settings`, { redirect: 'error', signal: AbortSignal.timeout(10_000) })
+    if (!response.ok) return fallback
+
+    const { apiUrl } = (await response.json()) as { apiUrl?: unknown }
+    if (typeof apiUrl !== 'string' || !URL.canParse(apiUrl)) return fallback
+
+    // The value comes from the network and the CI key goes there, so plaintext is allowed only when Studio itself uses it.
+    const { origin, protocol } = new URL(apiUrl)
+    return protocol === 'https:' || protocol === new URL(studioUrl).protocol ? `${origin}/v1${path}` : fallback
+  } catch {
+    return fallback
+  }
+}
+
+/**
+ * Deletes the pull request's CI agent from Studio (`DELETE /v1/agents`, or `DELETE /api/agents` on a
+ * Studio without a public API).
  *
  * Returns `false` when Studio has no such agent, like a pull request that never ran the workflow
  * or one cleaned up already. The CI API key goes in `x-api-key`, never in the URL.
  */
 export async function releaseAgent({ token, prNumber }: { token: string; prNumber: number }): Promise<boolean> {
-  const response = await fetch(`${studioUrl}/api/agents`, {
+  const response = await fetch(await publicApiUrl('/agents'), {
     method: 'DELETE',
     headers: { 'content-type': 'application/json', 'x-api-key': token },
     body: JSON.stringify({ machineToken: pullRequestMachineToken(prNumber) }),
