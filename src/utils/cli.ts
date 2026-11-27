@@ -3,7 +3,13 @@ import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { captureCommand } from './process.js'
 
-export const studioUrl = (process.env.KUBB_STUDIO_URL ?? 'https://kubb.studio').replace(/\/$/, '')
+const hostedStudioUrl = 'https://kubb.studio'
+
+function studioUrlOf(env: Record<string, string | undefined>): string {
+  return (env.KUBB_STUDIO_URL ?? hostedStudioUrl).replace(/\/$/, '')
+}
+
+export const studioUrl = studioUrlOf(process.env)
 
 /**
  * How generated files differ from an earlier snapshot. `base` is `null` when there is none.
@@ -107,37 +113,25 @@ export function pullRequestMachineToken(prNumber: number, env: Record<string, st
 }
 
 /**
- * Where an API key request goes. A Studio that serves the public API reports its origin as `apiUrl` in
- * `GET /api/settings`, and the request goes to `{apiUrl}/v1{path}`. Without one, or when the lookup fails,
- * it goes to `{studioUrl}/api{path}`, which takes the same keys.
+ * Where an API key request goes: `{apiUrl}/v1{path}`, with `KUBB_STUDIO_API_URL` as `apiUrl`, or
+ * `https://api.kubb.studio` for the hosted Studio. Any other `KUBB_STUDIO_URL` takes the key at `{studioUrl}/api{path}`.
  */
-export async function publicApiUrl(path: string): Promise<string> {
-  const fallback = `${studioUrl}/api${path}`
+export function publicApiUrl(path: string, env: Record<string, string | undefined> = process.env): string {
+  const studio = studioUrlOf(env)
+  const apiUrl = env.KUBB_STUDIO_API_URL || (studio === hostedStudioUrl ? 'https://api.kubb.studio' : undefined)
 
-  try {
-    const response = await fetch(`${studioUrl}/api/settings`, { redirect: 'error', signal: AbortSignal.timeout(10_000) })
-    if (!response.ok) return fallback
-
-    const { apiUrl } = (await response.json()) as { apiUrl?: unknown }
-    if (typeof apiUrl !== 'string' || !URL.canParse(apiUrl)) return fallback
-
-    // The value comes from the network and the CI key goes there, so plaintext is allowed only when Studio itself uses it.
-    const { origin, protocol } = new URL(apiUrl)
-    return protocol === 'https:' || protocol === new URL(studioUrl).protocol ? `${origin}/v1${path}` : fallback
-  } catch {
-    return fallback
-  }
+  return apiUrl ? `${new URL(apiUrl).origin}/v1${path}` : `${studio}/api${path}`
 }
 
 /**
  * Deletes the pull request's CI agent from Studio (`DELETE /v1/agents`, or `DELETE /api/agents` on a
- * Studio without a public API).
+ * self-hosted Studio without `KUBB_STUDIO_API_URL`).
  *
  * Returns `false` when Studio has no such agent, like a pull request that never ran the workflow
  * or one cleaned up already. The CI API key goes in `x-api-key`, never in the URL.
  */
 export async function releaseAgent({ token, prNumber }: { token: string; prNumber: number }): Promise<boolean> {
-  const response = await fetch(await publicApiUrl('/agents'), {
+  const response = await fetch(publicApiUrl('/agents'), {
     method: 'DELETE',
     headers: { 'content-type': 'application/json', 'x-api-key': token },
     body: JSON.stringify({ machineToken: pullRequestMachineToken(prNumber) }),
