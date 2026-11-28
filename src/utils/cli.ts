@@ -113,6 +113,7 @@ export function pullRequestMachineToken(prNumber: number, env: Record<string, st
 }
 
 const LOOPBACK_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]'])
+const IP_HOST = /^(\d{1,3}\.){3}\d{1,3}$|^\[[\da-f:.]+\]$/i
 
 /**
  * Where an API key request goes: `/v1{path}` on the Studio's public API, the `KUBB_STUDIO_URL` host with `api.` in
@@ -121,7 +122,11 @@ const LOOPBACK_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]'])
  */
 export function publicApiUrl(path: string, env: Record<string, string | undefined> = process.env): string {
   const url = new URL(studioUrlOf(env))
-  if (!LOOPBACK_HOSTS.has(url.hostname)) url.hostname = `api.${url.hostname}`
+  if (!LOOPBACK_HOSTS.has(url.hostname)) {
+    // An IP address has no `api.` name to put in front of it.
+    if (IP_HOST.test(url.hostname)) throw new Error(`KUBB_STUDIO_URL ${url.origin} has no api. hostname; set it to the Studio hostname, not an IP address`)
+    url.hostname = `api.${url.hostname}`
+  }
 
   return `${url.origin}/v1${path}`
 }

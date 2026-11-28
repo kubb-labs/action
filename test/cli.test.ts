@@ -160,6 +160,10 @@ describe('publicApiUrl', () => {
   ])('resolves %s', (_label, env, expected) => {
     expect(publicApiUrl('/agents', env)).toBe(expected)
   })
+
+  it.each(['https://10.0.0.5', 'https://[2001:db8::10]'])('refuses %s, which has no api. hostname', (studioUrl) => {
+    expect(() => publicApiUrl('/agents', { KUBB_STUDIO_URL: studioUrl })).toThrow('has no api. hostname')
+  })
 })
 
 describe('releaseAgent', () => {
