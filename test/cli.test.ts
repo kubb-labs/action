@@ -154,14 +154,15 @@ describe('publicApiUrl', () => {
   it.each([
     ['the hosted Studio', {}, 'https://api.kubb.studio/v1/agents'],
     ['the hosted Studio with a trailing slash', { KUBB_STUDIO_URL: 'https://kubb.studio/' }, 'https://api.kubb.studio/v1/agents'],
-    ['a self-hosted Studio', { KUBB_STUDIO_URL: 'https://studio.acme.dev' }, 'https://studio.acme.dev/api/agents'],
-    [
-      'KUBB_STUDIO_API_URL',
-      { KUBB_STUDIO_URL: 'https://studio.acme.dev', KUBB_STUDIO_API_URL: 'https://api.acme.dev/ignored' },
-      'https://api.acme.dev/v1/agents',
-    ],
+    ['the dev Studio', { KUBB_STUDIO_URL: 'https://dev.kubb.studio' }, 'https://api.dev.kubb.studio/v1/agents'],
+    ['a self-hosted Studio', { KUBB_STUDIO_URL: 'https://studio.acme.dev' }, 'https://api.studio.acme.dev/v1/agents'],
+    ['a Studio on this machine', { KUBB_STUDIO_URL: 'http://localhost:3000' }, 'http://localhost:3000/v1/agents'],
   ])('resolves %s', (_label, env, expected) => {
     expect(publicApiUrl('/agents', env)).toBe(expected)
+  })
+
+  it.each(['https://10.0.0.5', 'https://[2001:db8::10]'])('refuses %s, which has no api. hostname', (studioUrl) => {
+    expect(() => publicApiUrl('/agents', { KUBB_STUDIO_URL: studioUrl })).toThrow('has no api. hostname')
   })
 })
 

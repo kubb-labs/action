@@ -46,9 +46,9 @@ The repository needs `KUBB_TOKEN` in Actions secrets: an organization CI API key
 `x-api-key`. Set `KUBB_STUDIO_URL` only for a self-hosted Studio deployment; the default is
 `https://kubb.studio`.
 
-When a pull request closes, the action deletes its CI agent with `DELETE https://api.kubb.studio/v1/agents`.
-With another `KUBB_STUDIO_URL`, it calls `DELETE /api/agents` there. Set `KUBB_STUDIO_API_URL` to use the `/v1`
-routes of another public API hostname.
+When a pull request closes, the action deletes its CI agent through Studio's public API: `DELETE /v1/agents` on
+the `KUBB_STUDIO_URL` host with `api.` in front, such as `https://api.kubb.studio` for `https://kubb.studio` and
+`https://api.dev.kubb.studio` for `https://dev.kubb.studio`.
 
 The snapshot takes its package name and version from `package.json`. Set `package-name` or
 `package-version` to override them, for example to tag each pull request's snapshot:

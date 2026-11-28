@@ -112,20 +112,27 @@ export function pullRequestMachineToken(prNumber: number, env: Record<string, st
   return hash('sha256', `gh:${env.GITHUB_REPOSITORY_ID ?? env.GITHUB_REPOSITORY ?? ''}:${prNumber}`)
 }
 
+const LOOPBACK_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]'])
+const IP_HOST = /^(\d{1,3}\.){3}\d{1,3}$|^\[[\da-f:.]+\]$/i
+
 /**
- * Where an API key request goes: `{apiUrl}/v1{path}`, with `KUBB_STUDIO_API_URL` as `apiUrl`, or
- * `https://api.kubb.studio` for the hosted Studio. Any other `KUBB_STUDIO_URL` takes the key at `{studioUrl}/api{path}`.
+ * Where an API key request goes: `/v1{path}` on the Studio's public API, the `KUBB_STUDIO_URL` host with `api.` in
+ * front, such as `https://api.dev.kubb.studio` for `https://dev.kubb.studio`. A Studio on this machine serves `/v1`
+ * on its own origin.
  */
 export function publicApiUrl(path: string, env: Record<string, string | undefined> = process.env): string {
-  const studio = studioUrlOf(env)
-  const apiUrl = env.KUBB_STUDIO_API_URL || (studio === hostedStudioUrl ? 'https://api.kubb.studio' : undefined)
+  const url = new URL(studioUrlOf(env))
+  if (!LOOPBACK_HOSTS.has(url.hostname)) {
+    // An IP address has no `api.` name to put in front of it.
+    if (IP_HOST.test(url.hostname)) throw new Error(`KUBB_STUDIO_URL ${url.origin} has no api. hostname; set it to the Studio hostname, not an IP address`)
+    url.hostname = `api.${url.hostname}`
+  }
 
-  return apiUrl ? `${new URL(apiUrl).origin}/v1${path}` : `${studio}/api${path}`
+  return `${url.origin}/v1${path}`
 }
 
 /**
- * Deletes the pull request's CI agent from Studio (`DELETE /v1/agents`, or `DELETE /api/agents` on a
- * self-hosted Studio without `KUBB_STUDIO_API_URL`).
+ * Deletes the pull request's CI agent from Studio (`DELETE /v1/agents` on its public API).
  *
  * Returns `false` when Studio has no such agent, like a pull request that never ran the workflow
  * or one cleaned up already. The CI API key goes in `x-api-key`, never in the URL.
